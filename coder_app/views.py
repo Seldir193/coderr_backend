@@ -332,25 +332,6 @@ class CustomerProfileView(APIView):
         # Return an error response if the data is invalid
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    
-class BaseInfoView(APIView):
-    # Allows access to any user (authenticated or not)
-    permission_classes = [AllowAny]
-
-    def get(self, request, format=None):
-        """
-        Retrieve basic application information.
-        """
-        # Define static information about the application
-        data = {
-            "app_name": "Coderr",  # Name of the application
-            "version": "1.0",  # Current version of the application
-            "description": "An app for managing offers and profiles"  # Brief description of the app
-        }
-        # Return the information with a 200 OK status
-        return Response(data, status=status.HTTP_200_OK)
-
-    
 class OrderListView(APIView):
     # Requires the user to be authenticated to access this view
     permission_classes = [IsAuthenticated]
