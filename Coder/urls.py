@@ -6,6 +6,8 @@ from django.conf import settings
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('coder_app.urls')),  
+    #path('api/', include(('coder_app.urls', 'coder_app'), namespace='coder_app')),
+
 ]
 
 if settings.DEBUG:

@@ -10,8 +10,8 @@ def get_user_type(obj):
     """
     Returns the type of the user: superuser, business, customer, or unknown.
     """
-    if obj.is_superuser:
-        return "superuser"
+    #if obj.is_superuser:
+        #return "superuser"
     if hasattr(obj, 'business_profile'):
         return "business"
     elif hasattr(obj, 'customer_profile'):

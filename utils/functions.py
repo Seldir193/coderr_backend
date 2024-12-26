@@ -7,9 +7,10 @@ from rest_framework.exceptions import ValidationError
 from coder_app.serializers import UserProfileSerializer, BusinessProfileSerializer, CustomerProfileSerializer
 from coder_app.models import Review
 from django.contrib.auth.models import User
+from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import PermissionDenied
 
 # view.py
-
 # reviewDetailList_logic.py
 def get_review_or_404(pk):
     """
@@ -18,22 +19,14 @@ def get_review_or_404(pk):
     try:
         return Review.objects.get(pk=pk)
     except Review.DoesNotExist:
-        raise ValidationError({"error": "Review not found"}, code=status.HTTP_404_NOT_FOUND)
-
+        raise NotFound({"error": "Review not found"})
+    
 def permission_error_response(message):
     """
     Returns an error response for unauthorized access to review.
     """
     return Response({"error": message}, status=status.HTTP_403_FORBIDDEN)
 # End of reviewDetailList_logic.py
-
-# userOrdersView_logic.py
-def get_user_orders(user):
-    """
-    Returns orders associated with a specific user.
-    """
-    return Order.objects.filter(user=user)
-# End of userOrdersView_logic.py
 
 # customerProfileView_logic.py
 def get_customer_profile_or_error(user):
@@ -87,23 +80,38 @@ def save_user_profile_data(user, request_data):
     if user_serializer.is_valid():
         user_serializer.save()
         return user_serializer
-    return user_serializer  
+    else:
+        # Fehlerdetails für Debugging oder API-Antwort bereitstellen
+        raise ValidationError(user_serializer.errors)
 
 def save_profile_serializer(profile_serializer):
     """Validates and saves the profile serializer, if provided."""
     if profile_serializer and profile_serializer.is_valid():
         profile_serializer.save()
         return True
-    return False
+    else:
+        # Fehlerdetails bereitstellen
+        raise ValidationError(profile_serializer.errors)
 
 def update_profile_data(user, request_data):
     """Handle updating user profile data."""
-    user_serializer = save_user_profile_data(user, request_data)
-    if user_serializer.is_valid():
+    try:
+        # User-Daten speichern
+        user_serializer = save_user_profile_data(user, request_data)
+        
+        # Profilserializer abrufen und speichern
         profile_serializer = get_profile_serializer(user, request_data)
-        save_profile_serializer(profile_serializer)
-        return Response(user_serializer.data, status=status.HTTP_200_OK)
-    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if profile_serializer:
+            save_profile_serializer(profile_serializer)
+
+        # Erfolg: Benutzer-Daten zurückgeben
+        profile_type, profile_data = get_profile_data(user)
+        response_data = build_profile_response(user, profile_type, profile_data)
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    except ValidationError as e:
+        # Fehler zurückgeben
+        return Response({"errors": e.detail}, status=status.HTTP_400_BAD_REQUEST)
 # End of profileView_logic.py
 
 # businessProfileView_logic.py
@@ -256,18 +264,20 @@ def get_in_progress_count(user, offer):
         return Order.objects.filter(user=user, offer=offer, status='in_progress').count()
     elif hasattr(user, 'business_profile'):
         if offer.user != user:
-            raise ValidationError("You are not authorized to view data for this offer.")
+            raise PermissionDenied("You are not authorized to view data for this offer.")
         return Order.objects.filter(offer=offer, status='in_progress').count()
     else:
-        raise ValidationError("User is neither a provider nor a customer.")
+        raise PermissionDenied("Unauthorized user.")
 # End of orderInProgressCountView_logic.py
 
 # orderCompletedCountView_logic.py
 def get_user_or_error(user_id):
-    """Fetches a user by ID or returns an error."""
+    """
+    Fetches a user by ID or returns an error.
+    """
     user = User.objects.filter(id=user_id).first()
     if not user:
-        raise ValidationError({'error': 'User not found.'})
+        raise NotFound({'error': 'User not found.'})
     return user
 
 def count_completed_orders_for_user(user):
@@ -279,55 +289,24 @@ def count_completed_orders_for_user(user):
     elif hasattr(user, 'customer_profile'):
         return Order.objects.filter(user=user, status='completed').count()
     else:
-        raise ValidationError({'error': 'User is neither a provider nor a customer.'})
+        raise ValidationError({'error': 'User does not have a valid profile (business or customer).'})
+       
 # End of orderCompletedCountView_logic.py
 
 # orderDetailView_logic.py
 def get_order_or_403(order_id, user):
-    """
-    Fetches an order and checks permissions.
-    Returns the order or raises a ValidationError.
-    """
     try:
         order = Order.objects.get(id=order_id)
-        if order.offer.user != user:
-            raise ValidationError("You are not authorized to edit this order.")
+        #if order.offer.user != user:  # Der Benutzer ist nicht der Ersteller
+        if order.offer.user != user and order.user != user:
+            raise PermissionDenied("You are not authorized to edit this order.")
         return order
     except Order.DoesNotExist:
-        raise ValidationError("Order not found")
+        raise NotFound("Order not found")
+
 # End of orderDetailView_logic.py
 
-# createOrderView.logic.py
-def validate_offer_detail(offer_detail_id):
-    """
-    Validates whether an OfferDetail exists.
-    """
-    if not offer_detail_id:
-        return Response(
-            {"error": "The field 'offer_detail_id' is required."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    try:
-        return OfferDetail.objects.get(id=offer_detail_id)
-    except OfferDetail.DoesNotExist:
-        return Response(
-            {"error": "The specified OfferDetail does not exist."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
 
-def create_order_for_user(user, offer_detail):
-    """
-    Creates a new order for the user.
-    """
-    return Order.objects.create(
-        user=user,
-        business_user=offer_detail.offer.user,
-        offer=offer_detail.offer,
-        offer_detail_id=offer_detail,
-        status="pending",
-        features=offer_detail.features
-    )
-# End of CreateOrderView.logic.py
 
 
 

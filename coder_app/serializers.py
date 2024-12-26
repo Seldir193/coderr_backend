@@ -1,13 +1,12 @@
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from coder_app.models import Offer, BusinessProfile, CustomerProfile, Order, Review, OfferDetail
 from django.db.models import Avg
 from utils.profile_helpers import get_user_type, get_user_profile_image,create_new_user, create_user_profile
+from django.core.validators import MinValueValidator
 
 # serializers
-
 class UserProfileSerializer(serializers.ModelSerializer):
     tel = serializers.CharField(source='business_profile.tel', read_only=True)
     created_at = serializers.DateTimeField(
@@ -34,24 +33,24 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return get_user_profile_image(obj)  
 
 class RegistrationSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, validators=[validate_password])
     repeated_password = serializers.CharField(write_only=True)
     profile_type = serializers.ChoiceField(choices=[('customer', 'Customer'), ('business', 'Business')], write_only=True)
-
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'repeated_password', 'profile_type']
-
+        
     def validate(self, data):
         """
-        Validates input data, ensuring passwords match and superuser creation is restricted.
+        Validates input data, ensuring required fields are present and unique constraints are met.
         """
-        if data.get('is_superuser'):
-            raise ValidationError("Superusers cannot be created through this API.")
+        if User.objects.filter(email=data['email']).exists():
+            raise serializers.ValidationError({"email": "This email is already in use."})
         if data['password'] != data['repeated_password']:
-            raise ValidationError("Passwords do not match.")
+            raise serializers.ValidationError({"password": "Passwords do not match."})
         return data
-
+        
     def create(self, validated_data):
         """
         Creates a new user and their associated profile based on profile type.
@@ -71,6 +70,10 @@ class OfferDetailSerializer(serializers.ModelSerializer):
     revisions = serializers.IntegerField(source='revision_limit')
     features = serializers.ListField(child=serializers.CharField(), default=list)
     offer_type = serializers.CharField(required=True)
+    delivery_time_in_days = serializers.IntegerField(
+        required=True, 
+        validators=[MinValueValidator(1)]
+    )
 
     class Meta:
         model = OfferDetail
@@ -127,9 +130,10 @@ class BusinessProfileSerializer(serializers.ModelSerializer):
         return instance
     
 class OfferSerializer(serializers.ModelSerializer):
-    details = OfferDetailSerializer(many=True)
     user = UserProfileSerializer(read_only=True)
     business_profile = serializers.SerializerMethodField()
+    description = serializers.CharField(required=False, allow_blank=True)
+    details = OfferDetailSerializer(many=True, required=False)
 
     class Meta:
         model = Offer
@@ -284,10 +288,11 @@ class OrderSerializer(serializers.ModelSerializer):
             print(f"Order {instance.id} status changed to 'in_progress'.")
 
 class CustomerProfileSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = CustomerProfile
         fields = '__all__'
-
+        
 class ReviewSerializer(serializers.ModelSerializer):
     business_user = UserProfileSerializer(read_only=True)
     reviewer = UserProfileSerializer(read_only=True)
@@ -317,29 +322,37 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """
-        Validates the input data to ensure that a reviewer has not already reviewed the business user.
+        Custom validation for reviews.
         """
-        if self.instance is None:  
-            if Review.objects.filter(
-                business_user=data.get('business_user'),
-                reviewer=data.get('reviewer')
-            ).exists():
-                raise serializers.ValidationError("You have already reviewed this provider.")
-        return data
+        if self.instance is None:  # Validation for new reviews only
+            business_user = data.get('business_user')
+            reviewer = data.get('reviewer')
 
-    def create(self, validated_data):
-        """
-        Creates a review object with the validated data.
-        """
-        return super().create(validated_data)
+            if not hasattr(reviewer, 'customer_profile'):
+                raise serializers.ValidationError({
+                    "reviewer_id": "Only customers can write reviews."
+                })
+
+            if Review.objects.filter(business_user=business_user, reviewer=reviewer).exists():
+                raise serializers.ValidationError({
+                    "business_user_id": "You have already reviewed this provider."
+                })
+        return data
 
     def update(self, instance, validated_data):
         """
         Updates an existing review object with the provided validated data.
         """
+        # Only update fields explicitly provided in validated_data
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
         return instance
+
+        
+
+
+
+
 
         

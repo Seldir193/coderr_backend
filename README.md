@@ -51,6 +51,22 @@ The Coderr backend is designed to handle data management and business-specific l
   - `pillow`
   - For a complete list, refer to the `requirements.txt` file.
 
+
+## Tests
+
+In diesem Projekt sind insgesamt 73 Tests implementiert, um die Funktionalität und Stabilität der Anwendung sicherzustellen. Die Tests decken verschiedene Aspekte der Anwendung ab, einschließlich:
+
+- **Modelle**: Tests für die Validierung und die Methoden der Modelle.
+- **Serializer**: Tests für die Serializer, um sicherzustellen, dass die Daten korrekt validiert und verarbeitet werden.
+- **Admin-Oberflächen**: Tests für die Admin-Interfaces, um sicherzustellen, dass sie korrekt funktionieren.
+
+### Ausführen der Tests
+
+Um die Tests auszuführen, stelle sicher, dass du die erforderlichen Abhängigkeiten installiert hast und führe den folgenden Befehl im Terminal aus:
+
+```bash
+python manage.py test
+
 ---
 
 ## Installation
@@ -134,8 +150,7 @@ The Coderr backend is designed to handle data management and business-specific l
   Retrieves the count of in-progress orders for a specific offer.
 - **GET** `/completed-order-count/<int:user_id>/`  
   Retrieves the count of completed orders for a specific user.
-- **GET** `/user/orders/`  
-  Retrieves all orders placed by the logged-in user.
+
 
 ### Offers
 - **GET** `/offers/`  

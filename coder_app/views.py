@@ -1,14 +1,15 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 from rest_framework import status
 from django.contrib.auth import authenticate
-from rest_framework.permissions import AllowAny, IsAuthenticated 
+from rest_framework.permissions import AllowAny, IsAuthenticated ,IsAuthenticatedOrReadOnly
 from coder_app.serializers import (
     LoginSerializer, OrderSerializer, OfferSerializer, 
     BusinessProfileSerializer, CustomerProfileSerializer,
     ReviewSerializer, RegistrationSerializer,OrderSerializer
 )
-from coder_app.models import Offer, BusinessProfile, CustomerProfile, Review, OfferDetail
+from coder_app.models import Offer, BusinessProfile, CustomerProfile, Review
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListCreateAPIView
 from django_filters.rest_framework import DjangoFilterBackend
@@ -17,6 +18,8 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError
 from coder_app.models import Offer
 from coder_app.filters import OfferFilter
+from rest_framework.exceptions import NotFound
+
 
 #from utils.utils import error_response
 from utils.functions import ( get_offer_or_none,update_offer,calculate_average_rating,
@@ -25,12 +28,13 @@ from utils.functions import ( get_offer_or_none,update_offer,calculate_average_r
                              get_offers_for_user,get_business_profile_or_error,
                              get_profile_data,build_profile_response,
                              update_profile_data,get_customer_profile_or_error,
-                             get_user_orders,
+                             
                              get_in_progress_count,get_user_or_error,count_completed_orders_for_user,
-                             get_order_or_403,validate_offer_detail,create_order_for_user,get_review_or_404, permission_error_response)
+                             get_order_or_403,
+                             get_review_or_404, permission_error_response)
 
 from utils.utils import (create_token_for_user, authenticate_user,
-                         error_response,serialize_orders)
+                         error_response)
 
      
 class CustomPagination(PageNumberPagination):
@@ -42,16 +46,15 @@ class CustomPagination(PageNumberPagination):
     
     # Maximum number of items allowed per page
     max_page_size = 100
-   
+    
     def get_paginated_response(self, data):
-        # Returns a custom paginated response including additional metadata
+        print(f"Using pagination: {self.__class__.__name__}")
         return Response({
-            'count': self.page.paginator.count,  # Total number of items
-            'total_pages': self.page.paginator.num_pages,  # Total number of pages
-            'current_page': self.page.number,  # Current page number
-            'results': data  # Paginated data
-        })
-        
+            'count': self.page.paginator.count,
+            'total_pages': self.page.paginator.num_pages,
+            'current_page': self.page.number,
+            'results': data
+    })
 
 class RegistrationView(APIView):
     # Allows any user (authenticated or not) to access this view
@@ -59,6 +62,7 @@ class RegistrationView(APIView):
 
     def post(self, request, format=None):
         # Deserialize and validate the incoming data
+        
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             # Save the user instance if the data is valid
@@ -70,9 +74,8 @@ class RegistrationView(APIView):
                 'user_id': user.id,  # Return the user ID
                 'username': user.username  # Return the username
             }, status=status.HTTP_201_CREATED)
-        # Return an error response if the data is invalid
-        return error_response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
     
 class LoginView(APIView):
     # Allows any user (authenticated or not) to access this view
@@ -89,8 +92,7 @@ class LoginView(APIView):
                 # Authenticate the user using the provided credentials
                 user = authenticate_user(username, password)
             except ValidationError as e:
-                # Return an error response if authentication fails
-                return error_response(str(e), status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
             # Create a token for the authenticated user
             token_key = create_token_for_user(user)
@@ -103,11 +105,8 @@ class LoginView(APIView):
                 'username': user.username,  # Return the username
                 'profile_type': profile_type  # Return the user's profile type (business or customer)
             }, status=status.HTTP_200_OK)
-
-        # Return an error response if the data is invalid
-        return error_response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-        
+        return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+         
 class OfferListView(ListCreateAPIView):
     """
     API endpoint for listing offers and creating new offers.
@@ -118,7 +117,7 @@ class OfferListView(ListCreateAPIView):
     filterset_class = OfferFilter  # Custom filter class
     ordering_fields = ['created_at', 'updated_at', 'price']  # Fields available for ordering
     ordering = ['-created_at', 'price']  # Default ordering by creation date (descending) and price
-    permission_classes = [AllowAny]  # Allows access to any user
+    permission_classes = [IsAuthenticatedOrReadOnly] 
     pagination_class = CustomPagination  # Custom pagination for offer lists
     
     def get_queryset(self):
@@ -131,19 +130,18 @@ class OfferListView(ListCreateAPIView):
         # Return offers accessible to the current user
         return get_offers_for_user(self.request.user)
     
+    
     def perform_create(self, serializer):
         """
-        Overrides the creation logic to set the user.
+        Custom method to handle creation of offers.
+        Ensures the user creating the offer has a business profile.
         """
         user = self.request.user
-        # Ensure the user is authenticated and has a business profile
-        if user.is_authenticated and hasattr(user, 'business_profile'):
-            serializer.save(user=user)  # Save the offer with the associated user
-        else:
-            # Raise an error if the user is not a business provider
-            raise ValidationError("Only providers can create offers.")
-        
-    
+        if not hasattr(user, 'business_profile'):
+            raise PermissionDenied("Only providers can create offers.")
+        serializer.save(user=user)
+
+
 class OfferDetailView(APIView):
     # Requires the user to be authenticated to access this view
     permission_classes = [IsAuthenticated]  
@@ -355,22 +353,6 @@ class OrderListView(APIView):
         # Pass the incoming data and the user to the order creation logic
         return create_order(request.data, request.user)
 
-    
-class UserOrdersView(APIView):
-    # Requires the user to be authenticated to access this view
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        """
-        Retrieve orders specific to the authenticated user.
-        """
-        # Fetch orders associated with the current user
-        orders = get_user_orders(request.user)
-        # Serialize the orders using a custom serialization function
-        serialized_data = serialize_orders(orders)
-        # Return the serialized data with a 200 OK status
-        return Response(serialized_data, status=status.HTTP_200_OK)
-
 
 class ReviewPagination(PageNumberPagination):
     page_size = 10
@@ -466,7 +448,7 @@ class ReviewDetailView(APIView):
         # Delete the review
         review.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+  
 
 class OrderInProgressCountView(APIView):
     def get(self, request, offer_id, *args, **kwargs):
@@ -481,14 +463,15 @@ class OrderInProgressCountView(APIView):
             try:
                 # Calculate the count of in-progress orders for the user and offer
                 in_progress_count = get_in_progress_count(request.user, offer)
-            except ValidationError as e:
-                return error_response(str(e), status.HTTP_403_FORBIDDEN)
+            except PermissionDenied as e:
+             return error_response(str(e), status.HTTP_403_FORBIDDEN)
 
             return Response({'in_progress_count': in_progress_count}, status=status.HTTP_200_OK)
 
         except Exception as e:
+            print(f"Unexpected error: {e}")
             return error_response(f"Unexpected error: {str(e)}", status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
 
 class OrderCompletedCountView(APIView):
     permission_classes = [IsAuthenticated]
@@ -499,27 +482,30 @@ class OrderCompletedCountView(APIView):
         """
         try:
             user = get_user_or_error(user_id)
-            # Calculate the count of completed orders for the user
+
             completed_count = count_completed_orders_for_user(user)
             return Response({'completed_order_count': completed_count}, status=status.HTTP_200_OK)
 
-        except ValidationError as e:
+        except NotFound as e:  
+            print(f"NotFound Error: {e.detail}")
+            return Response(e.detail, status=status.HTTP_404_NOT_FOUND)
+
+        except ValidationError as e:  
+            print(f"Validation Error: {e.detail}")
             return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
+
+        except Exception as e:  
+            print(f"Unexpected Error: {str(e)}")
             return Response({'error': f"Unexpected error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
 
 class OrderDetailView(APIView):
     permission_classes = [IsAuthenticated]
     
     def patch(self, request, order_id, format=None):
-        """
-        Update an order's details.
-        """
+        print(f"OrderDetailView PATCH called for order_id: {order_id}")
         try:
-            # Get the order and ensure the user has permission to modify it
+            print(f"Received PATCH request for order ID: {order_id}")
             order = get_order_or_403(order_id, request.user)
-            # Partially update the order
             serializer = OrderSerializer(order, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
@@ -527,41 +513,10 @@ class OrderDetailView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
-        
-
-class CreateOrderView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        """
-        Create a new order for a specific offer detail.
-        """
-        offer_detail_id = request.data.get("offer_detail_id")
-        user = request.user
-
-        # Superusers are not allowed to create orders
-        if user.is_superuser:
-            return Response(
-                {"error": "Superusers cannot create orders."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        # Validate the provided offer detail ID
-        validation_error = validate_offer_detail(offer_detail_id)
-        if validation_error:
-            return validation_error
-
-        try:
-            # Retrieve the offer detail and create the order
-            offer_detail = OfferDetail.objects.get(id=offer_detail_id)
-            order = create_order_for_user(user, offer_detail)
-            return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
         except Exception as e:
-            return Response(
-                {"error": f"Error creating the order: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-            
+            print(f"Unexpected Error: {e}")
+            return Response({"error": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class BaseInfoView(APIView):
     permission_classes = [AllowAny]

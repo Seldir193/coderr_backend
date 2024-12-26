@@ -18,7 +18,6 @@ urlpatterns = [
     path('offers/<int:id>/', views.OfferDetailView.as_view(), name='offer-detail'),  
     path('base-info/', views.BaseInfoView.as_view(), name='base-info'),  
     path('completed-order-count/<int:user_id>/', views.OrderCompletedCountView.as_view(), name='completed-order-count'),  
-    path('user/orders/', views.UserOrdersView.as_view(), name='user-orders'),
 ]
 
 

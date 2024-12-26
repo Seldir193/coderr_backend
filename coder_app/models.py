@@ -58,6 +58,7 @@ class OfferDetail(models.Model):
     additional_details = models.TextField(null=True, blank=True)
     offer_type = models.CharField(max_length=50, choices=[('basic', 'Basic'), ('standard', 'Standard'), ('premium', 'Premium')], null=True, blank=True)
     features = models.JSONField(default=list)
+    
 
     def __str__(self):
         # Returns the string representation of the offer detail.
@@ -86,7 +87,6 @@ class CustomerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer_profile')
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
-    date_of_birth = models.DateField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     file = models.ImageField(upload_to='profile_images/', null=True, blank=True)
 
@@ -128,6 +128,7 @@ class Order(models.Model):
     def set_business_user_if_missing(self):
         # Assigns the business user from the offer if not already set.
         if not self.business_user and self.offer:
+        #if self.offer and not self.business_user:
             self.business_user = self.offer.user
 
     def set_features_from_offer_detail_if_missing(self):
