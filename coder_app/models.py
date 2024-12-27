@@ -69,7 +69,6 @@ class BusinessProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='business_profile')
     company_name = models.CharField(max_length=255)
     company_address = models.TextField()
-    #company_website = models.URLField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     tel = models.CharField(max_length=20, blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)

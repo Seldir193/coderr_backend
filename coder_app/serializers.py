@@ -30,35 +30,53 @@ class UserProfileSerializer(serializers.ModelSerializer):
         """
         Retrieves the profile image URL based on the user profile type.
         """
-        return get_user_profile_image(obj)  
-
+        return get_user_profile_image(obj) 
+    
 class RegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, validators=[validate_password])
     repeated_password = serializers.CharField(write_only=True)
-    profile_type = serializers.ChoiceField(choices=[('customer', 'Customer'), ('business', 'Business')], write_only=True)
+    profile_type = serializers.ChoiceField(
+        choices=[('customer', 'Customer'), ('business', 'Business')],
+        write_only=True,
+        required=False  
+    )
+    
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'repeated_password', 'profile_type']
-        
+
     def validate(self, data):
         """
-        Validates input data, ensuring required fields are present and unique constraints are met.
+        Validates the input data to ensure correctness.
         """
+        if 'type' in self.initial_data:
+            data['profile_type'] = self.initial_data['type']
+        else:
+            raise serializers.ValidationError({"profile_type": "Profile type is required. Choose 'business' or 'customer'."})
+        
+        if data['profile_type'] not in ['customer', 'business']:
+            raise serializers.ValidationError({
+                "profile_type": "Invalid profile type. Must be 'business' or 'customer'."
+            })
+
         if User.objects.filter(email=data['email']).exists():
             raise serializers.ValidationError({"email": "This email is already in use."})
+
         if data['password'] != data['repeated_password']:
             raise serializers.ValidationError({"password": "Passwords do not match."})
+
         return data
-        
+
     def create(self, validated_data):
         """
-        Creates a new user and their associated profile based on profile type.
+        Creates a user and their profile using helper functions.
         """
         user = create_new_user(validated_data)
         profile_type = validated_data['profile_type']
         create_user_profile(user, profile_type, validated_data)
         return user
+
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()

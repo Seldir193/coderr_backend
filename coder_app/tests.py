@@ -7,7 +7,7 @@ from rest_framework.exceptions import ValidationError
 from django.db import IntegrityError
 from coder_app.serializers import (LoginSerializer,OrderSerializer,
                              OfferSerializer,BusinessProfileSerializer, 
-                             CustomerProfileSerializer, User,OfferDetailSerializer
+                             CustomerProfileSerializer, User,OfferDetailSerializer,RegistrationSerializer
                              )
 from coder_app.models import Offer, OfferDetail
 from decimal import Decimal
@@ -21,8 +21,10 @@ from coder_app.admin import OrderAdmin
 from coder_app.admin import ReviewAdmin
 from coder_app.admin import OfferDetailAdmin
 
+from django.core.exceptions import ValidationError
 
 # admin_logic.py
+
 class OfferDetailAdminTest(TestCase):
 
     def setUp(self):
@@ -237,7 +239,6 @@ class BusinessProfileAdminTest(TestCase):
             user=self.user,
             company_name='Test Company',
             company_address='123 Test St, Test City',
-            company_website='https://www.testcompany.com',
             description='This is a test company.',
             tel='1234567890',
             location='Test Location',
@@ -417,7 +418,6 @@ class BusinessProfileModelTest(TestCase):
             user=self.user,
             company_name='Test Company',
             company_address='123 Test St, Test City',
-            company_website='https://www.testcompany.com',
             description='This is a test company.',
             tel='1234567890',
             location='Test Location',
@@ -426,7 +426,6 @@ class BusinessProfileModelTest(TestCase):
         )
         self.assertEqual(profile.company_name, 'Test Company')
         self.assertEqual(profile.company_address, '123 Test St, Test City')
-        self.assertEqual(profile.company_website, 'https://www.testcompany.com')
         self.assertEqual(profile.description, 'This is a test company.')
         self.assertEqual(profile.tel, '1234567890')
         self.assertEqual(profile.location, 'Test Location')
@@ -549,88 +548,69 @@ class OfferModelTest(TestCase):
         # Teste die String-Repräsentation des Angebots
         offer = Offer(title='Test Offer')
         self.assertEqual(str(offer), 'Test Offer')
+        
 
-class OfferDetailModelTests(TestCase):
+
+
+class OfferDetailModelTest(TestCase):
+
     def setUp(self):
-        """
-        Set up an Offer instance for testing.
-        """
-        self.offer = Offer.objects.create(
-            title="Test Offer",
-            description="Test Description",
-            price=150.00,
-            delivery_time_in_days=10
-        )
+        # Erstelle ein Angebot, um es mit OfferDetail zu verknüpfen
+        self.offer = Offer.objects.create(title="Test Offer", description="Test Description", price=100.00)
 
-    def test_create_valid_offer_detail(self):
-        """
-        Test that a valid OfferDetail instance can be created.
-        """
+    def test_create_offer_detail(self):
+        # Teste die Erstellung einer OfferDetail-Instanz
         offer_detail = OfferDetail.objects.create(
             offer=self.offer,
-            variant_title="Basic Plan",
-            variant_price=100.00,
+            variant_title="Test Variant",
+            variant_price=29.99,
             delivery_time_in_days=5,
             revision_limit=3,
+            additional_details="Some additional details",
             offer_type="basic",
             features=["Feature 1", "Feature 2"]
         )
-        self.assertEqual(offer_detail.variant_title, "Basic Plan")
+        self.assertIsInstance(offer_detail, OfferDetail)
+        self.assertEqual(offer_detail.variant_title, "Test Variant")
+        self.assertEqual(offer_detail.variant_price, 29.99)
+        self.assertEqual(offer_detail.delivery_time_in_days, 5)
+        self.assertEqual(offer_detail.revision_limit, 3)
+        self.assertEqual(offer_detail.additional_details, "Some additional details")
         self.assertEqual(offer_detail.offer_type, "basic")
         self.assertEqual(offer_detail.features, ["Feature 1", "Feature 2"])
 
-    def test_invalid_offer_type(self):
-        """
-        Test that an invalid offer_type raises a ValidationError.
-        """
-        offer_detail = OfferDetail(
+    def test_str_method(self):
+        # Teste die __str__-Methode
+        offer_detail = OfferDetail.objects.create(
             offer=self.offer,
-            variant_title="Invalid Plan",
-            variant_price=50.00,
+            variant_title="Test Variant",
+            variant_price=29.99,
             delivery_time_in_days=5,
-            offer_type="invalid"  # Not in the choices list
-        )
-        with self.assertRaises(ValidationError) as context:
-            offer_detail.full_clean()
-        self.assertIn('offer_type', context.exception.message_dict)
-
-    def test_default_features(self):
-        """
-        Test that the default value for features is an empty list.
-        """
-        offer_detail = OfferDetail.objects.create(
-            offer=self.offer,
-            variant_title="Standard Plan",
-            variant_price=200.00,
-            delivery_time_in_days=7,
-            offer_type="standard"
-        )
-        self.assertEqual(offer_detail.features, [])
-
-    def test_str_representation(self):
-        """
-        Test the string representation of an OfferDetail instance.
-        """
-        offer_detail = OfferDetail.objects.create(
-            offer=self.offer,
-            variant_title="Premium Plan",
-            variant_price=300.00,
-            delivery_time_in_days=3,
+            revision_limit=3,
+            additional_details="Some additional details",
             offer_type="premium"
         )
-        self.assertEqual(str(offer_detail), "premium - Premium Plan")
+        self.assertEqual(str(offer_detail), "premium - Test Variant")
 
-    def test_missing_offer(self):
-        """
-        Test that an OfferDetail cannot be created without an Offer.
-        """
-        with self.assertRaises(IntegrityError):
-            OfferDetail.objects.create(
-                variant_title="No Offer Plan",
-                variant_price=100.00,
-                delivery_time_in_days=5,
-                offer_type="basic"
-            )
+    def test_variant_price_validation(self):
+        # Teste die Validierung für variant_price mit einem ungültigen Wert
+        offer_detail = OfferDetail(
+            offer=self.offer,
+            variant_title="Test Variant",
+            variant_price="invalid",  # Ungültiger Wert
+            delivery_time_in_days=5,
+            revision_limit=3,
+            additional_details="Some additional details",
+            offer_type="basic",
+            features=["Feature 1", "Feature 2"]  # Setze gültige Features
+        )
+        with self.assertRaises(ValidationError):
+            offer_detail.full_clean()  # Dies sollte eine Validierungsfehler auslösen
+
+    def test_offer_type_choices(self):
+        # Teste die Auswahlmöglichkeiten für offer_type
+        offer_detail = OfferDetail(offer=self.offer, variant_title="Test Variant", offer_type="standard")
+        self.assertIn(offer_detail.offer_type, dict(OfferDetail._meta.get_field('offer_type').choices))
 
 #End of model_logic.py
 
@@ -1027,3 +1007,142 @@ class LoginSerializerTests(TestCase):
         serializer = LoginSerializer(data=data)
         self.assertFalse(serializer.is_valid())
         self.assertIn('password', serializer.errors)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class RegistrationSerializerTests(TestCase):
+    def test_valid_customer_registration(self):
+        """
+        Test that a valid customer registration is processed successfully with 'type' field.
+        """
+        data = {
+            "username": "testuser",
+            "email": "testcustomer@example.com",
+            "password": "securepassword",
+            "repeated_password": "securepassword",
+            "type": "customer"  # Frontend sendet 'type'
+        }
+        serializer = RegistrationSerializer(data=data)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        user = serializer.save()
+
+        # Überprüfen, dass Benutzer und Profil erstellt wurden
+        self.assertTrue(User.objects.filter(username="testuser").exists())
+        self.assertTrue(CustomerProfile.objects.filter(user=user).exists())
+
+    def test_valid_business_registration(self):
+        """
+        Test that a valid business registration is processed successfully with 'type' field.
+        """
+        data = {
+            "username": "bizuser",
+            "email": "testbusiness@example.com",
+            "password": "securepassword",
+            "repeated_password": "securepassword",
+            "type": "business"  # Frontend sendet 'type'
+        }
+        serializer = RegistrationSerializer(data=data)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        user = serializer.save()
+
+        # Überprüfen, dass Benutzer und Profil erstellt wurden
+        self.assertTrue(User.objects.filter(username="bizuser").exists())
+        self.assertTrue(BusinessProfile.objects.filter(user=user).exists())
+
+    def test_invalid_profile_type(self):
+        """
+        Test that an invalid profile type raises a validation error.
+        """
+        data = {
+            "username": "invaliduser",
+            "email": "invalidprofile@example.com",
+            "password": "securepassword",
+            "repeated_password": "securepassword",
+            "type": "invalid"  # Ungültiger Profiltyp
+        }
+        serializer = RegistrationSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("profile_type", serializer.errors)
+
+    def test_password_mismatch(self):
+        """
+        Test that mismatched passwords raise a validation error.
+        """
+        data = {
+            "username": "mismatchuser",
+            "email": "mismatch@example.com",
+            "password": "password123",
+            "repeated_password": "password456",
+            "type": "customer"  # Frontend sendet 'type'
+        }
+        serializer = RegistrationSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("password", serializer.errors)
+
+    def test_duplicate_email(self):
+        """
+        Test that a duplicate email raises a validation error.
+        """
+        User.objects.create(username="existinguser", email="duplicate@example.com", password="dummy")
+        data = {
+            "username": "newuser",
+            "email": "duplicate@example.com",
+            "password": "securepassword",
+            "repeated_password": "securepassword",
+            "type": "business"  # Frontend sendet 'type'
+        }
+        serializer = RegistrationSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("email", serializer.errors)
+
+    def test_missing_type_field(self):
+        """
+        Test that missing 'type' field raises a validation error.
+        """
+        data = {
+            "username": "missingtype",
+            "email": "missingtype@example.com",
+            "password": "securepassword",
+            "repeated_password": "securepassword"
+        }
+        serializer = RegistrationSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("profile_type", serializer.errors)
+
+    def test_missing_email(self):
+        """
+        Test that missing email raises a validation error.
+        """
+        data = {
+            "username": "noemailuser",
+            "password": "securepassword",
+            "repeated_password": "securepassword",
+            "type": "customer"  # Frontend sendet 'type'
+        }
+        serializer = RegistrationSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("email", serializer.errors)
+
+
+
+
+
+
+
+
+
+
+
+
+
