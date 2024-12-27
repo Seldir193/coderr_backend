@@ -95,7 +95,7 @@ class BusinessProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = BusinessProfile
         fields = [
-            'id', 'company_name', 'company_address', 'company_website',
+            'id', 'company_name', 'company_address', 
             'description', 'tel', 'location', 'working_hours', 'created_at',
             'user', 'avg_rating', 'pending_orders', 'email', 'username', 'profile_image'
         ]
@@ -117,7 +117,7 @@ class BusinessProfileSerializer(serializers.ModelSerializer):
         """
         Updates the business profile with the provided validated data.
         """
-        for field in ['company_name', 'company_address', 'company_website', 'description', 'tel', 'location', 'working_hours']:
+        for field in ['company_name', 'company_address', 'description', 'tel', 'location', 'working_hours']:
             setattr(instance, field, validated_data.get(field, getattr(instance, field)))
         if 'profile_image' in validated_data:
             instance.profile_image = validated_data['profile_image']
