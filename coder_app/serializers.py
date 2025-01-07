@@ -35,7 +35,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         """
         return get_user_profile_image(obj) 
     
-    
 class RegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, validators=[validate_password])
@@ -87,12 +86,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
         create_user_profile(user, profile_type, validated_data)
         return user
 
-
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
     
-
 class OfferDetailSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
 
@@ -106,7 +103,6 @@ class OfferDetailSerializer(serializers.ModelSerializer):
         """
         return f"/offerdetails/{obj.id}/"
     
-    
 class OfferDetailFullSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source='variant_title')
     #price = serializers.DecimalField(source='variant_price', max_digits=10, decimal_places=2)
@@ -114,12 +110,12 @@ class OfferDetailFullSerializer(serializers.ModelSerializer):
     revisions = serializers.IntegerField(source='revision_limit')
     features = serializers.ListField(
         child=serializers.CharField(),
-        required=True,  # Features müssen angegeben sein
+        required=True,  
     )
     offer_type = serializers.ChoiceField(choices=['basic', 'standard', 'premium'], required=True)
     delivery_time_in_days = serializers.IntegerField(
         required=True,
-        validators=[MinValueValidator(1)]  # Nur positive Werte
+        validators=[MinValueValidator(1)]  
     )
 
     class Meta:
@@ -138,9 +134,6 @@ class OfferDetailFullSerializer(serializers.ModelSerializer):
         return value
     
     def get_price(self, obj):
-        #"""
-       # Ensure the price is returned as a Decimal with two decimal places.
-       # """
         return float(Decimal(obj.variant_price).quantize(Decimal('0.00')))
     
     
@@ -152,8 +145,7 @@ class OfferSerializer(serializers.ModelSerializer):
     user_details = serializers.SerializerMethodField()
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
-    image = serializers.ImageField(required=True) 
-
+    
     class Meta:
         model = Offer
         fields = [
@@ -163,14 +155,12 @@ class OfferSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'user', 'min_price', 'min_delivery_time', 'created_at', 'updated_at']
         
-    
     def get_details(self, obj):
         request = self.context.get('request')
         if request and request.resolver_match.view_name == 'offer-detail':
             return OfferDetailFullSerializer(obj.details.all(), many=True).data
         return OfferDetailSerializer(obj.details.all(), many=True).data
 
-    
     def get_min_price(self, obj):
         min_price = obj.details.aggregate(min_price=Min('variant_price'))['min_price']
         if min_price is not None:
@@ -198,7 +188,6 @@ class OfferSerializer(serializers.ModelSerializer):
     
         offer = Offer.objects.create(user=user, image=image, **validated_data)
         print("Offer erstellt mit Bild:", offer.image.url if offer.image else "Kein Bild")
-       # print("Details data received:", details_data)
         
         for detail_data in details_data:
             OfferDetail.objects.create(
@@ -218,7 +207,6 @@ class OfferSerializer(serializers.ModelSerializer):
         image = validated_data.pop('image', None) 
         print("Update Image:", image)
     
-    # Aktualisiere die Hauptfelder des Angebots
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
             
@@ -226,7 +214,6 @@ class OfferSerializer(serializers.ModelSerializer):
             instance.image = image
         instance.save()
 
-    # Aktualisiere oder erstelle die zugehörigen OfferDetails
         if details_data:
             existing_details = {detail.offer_type: detail for detail in instance.details.all()}
             updated_offer_types = set()
@@ -234,14 +221,13 @@ class OfferSerializer(serializers.ModelSerializer):
             for detail_data in details_data:
                 offer_type = detail_data.get('offer_type')
                 if offer_type in existing_details:
-                # Aktualisiere bestehendes Detail
+                    
                     detail_instance = existing_details[offer_type]
                     for attr, value in detail_data.items():
                         setattr(detail_instance, attr, value)
                     detail_instance.save()
                     updated_offer_types.add(offer_type)
                 else:
-                # Erstelle neues Detail
                     OfferDetail.objects.create(
                         offer=instance,
                         variant_title=detail_data['title'],
@@ -253,12 +239,12 @@ class OfferSerializer(serializers.ModelSerializer):
                     )
                     updated_offer_types.add(offer_type)
 
-        # Lösche Details, die nicht in der Anfrage enthalten sind
             for offer_type, detail_instance in existing_details.items():
                 if offer_type not in updated_offer_types:
                     detail_instance.delete()
 
         return instance
+
 
 class BusinessProfileSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer(read_only=True)
@@ -399,7 +385,7 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
-        fields = ['id', 'business_user', 'reviewer', 'offer', 'rating', 'description', 'created_at', 'updated_at']
+        fields = ['id', 'business_user', 'reviewer', 'rating', 'description', 'created_at', 'updated_at']
         read_only_fields = ['id', 'reviewer', 'created_at', 'updated_at']
         
   

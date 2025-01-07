@@ -25,6 +25,7 @@ from utils.utils import (create_token_for_user, authenticate_user)
 from django.db.models import Min
 from rest_framework.permissions import BasePermission
 from django_filters.rest_framework import DjangoFilterBackend
+import json
 
 
 class IsOwnerOrAdmin(BasePermission):
@@ -40,6 +41,7 @@ class IsBusinessProfile(BasePermission):
     def has_permission(self, request, view):
         return hasattr(request.user, "business_profile")
 
+
 class CustomPagination(PageNumberPagination):
     page_size = 6
     page_size_query_param = 'page_size'
@@ -52,15 +54,13 @@ class CustomPagination(PageNumberPagination):
             'current_page': self.page.number,
             'results': data,
         })
-        
-        
+
 class OfferListView(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = CustomPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = OfferFilter
-   # parser_classes = [MultiPartParser, FormParser]
-    #parser_classes = [MultiPartParser, FormParser, JSONParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
         """
@@ -100,6 +100,7 @@ class OfferListView(APIView):
 
         details = request.data.get("details", [])
         if len(details) != 3 or not all(d["offer_type"] in ["basic", "standard", "premium"] for d in details):
+            print("REQUEST DATA:", request.data)
             return Response(
                 {"error": "You must provide exactly three details with offer_type: basic, standard, and premium."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -108,7 +109,6 @@ class OfferListView(APIView):
         serializer = OfferSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             offer = serializer.save()
-        # Nur die gewünschten Felder zurückgeben
         
             response_data = {
                 "id": offer.id,
@@ -119,12 +119,8 @@ class OfferListView(APIView):
             }
             return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+   
     
-
-
-
-    
-
 class OfferDetailView(APIView):
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin] 
 
@@ -138,10 +134,8 @@ class OfferDetailView(APIView):
         offer = self.get_object(id)
         if not offer:
             return Response({"error": "Offer not found."}, status=status.HTTP_404_NOT_FOUND)
-
         serializer = OfferSerializer(offer, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
     
     def patch(self, request, id, format=None):
         try:
@@ -155,9 +149,6 @@ class OfferDetailView(APIView):
         if serializer.is_valid():
             offer = serializer.save()
             
-       
-
-        # Bestehende Details aktualisieren oder neue erstellen
             existing_details = {detail.id: detail for detail in offer.details.all()}
             updated_ids = set()
 
@@ -166,7 +157,6 @@ class OfferDetailView(APIView):
                 if detail_id and detail_id in existing_details:
                     detail_instance = existing_details[detail_id]
                 
-                # Attributwerte manuell setzen
                     detail_instance.variant_title = detail_data.get('title', detail_instance.variant_title)
                     detail_instance.variant_price = detail_data.get('price', detail_instance.variant_price)
                     detail_instance.revision_limit = detail_data.get('revisions', detail_instance.revision_limit)
@@ -174,7 +164,6 @@ class OfferDetailView(APIView):
                     detail_instance.features = detail_data.get('features', detail_instance.features)
                     detail_instance.offer_type = detail_data.get('offer_type', detail_instance.offer_type)
                 
-                # Detail speichern
                     detail_instance.save()
                     updated_ids.add(detail_id)
                 else:
@@ -188,12 +177,10 @@ class OfferDetailView(APIView):
                         offer_type=detail_data['offer_type'],
                     )
 
-        # Alte Details löschen, die nicht in den aktualisierten Daten enthalten sind
             for detail_id in existing_details.keys():
                 if detail_id not in updated_ids:
                     existing_details[detail_id].delete()
-
-        # Rückgabe der vollständigen Details
+                    
             response_data = {
                 "id": offer.id,
                 "title": offer.title,
@@ -202,11 +189,6 @@ class OfferDetailView(APIView):
             return Response(response_data, status=status.HTTP_200_OK)
     
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    
-    
-    
-    
 
     def delete(self, request, id, format=None):
         try:
@@ -546,6 +528,8 @@ class ReviewPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 50
     
+    
+
 class ReviewListCreateView(APIView):
     """
     GET: Listet alle Bewertungen basierend auf Filtern und Sortierung auf.
@@ -557,13 +541,18 @@ class ReviewListCreateView(APIView):
         business_user_id = request.query_params.get('business_user_id')
         ordering = request.query_params.get('ordering', 'updated_at')
 
-        reviews = Review.objects.all()
-        if business_user_id:
-            reviews = reviews.filter(business_user_id=business_user_id)
+        if hasattr(request.user, 'customer_profile') and not business_user_id:
+           
+            reviews = Review.objects.filter(reviewer=request.user)
+        else:
+            reviews = Review.objects.all()
+            if business_user_id:
+                reviews = reviews.filter(business_user_id=business_user_id)
+        
         reviews = reviews.order_by(ordering)
         serializer = ReviewSerializer(reviews, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
     def post(self, request):
         try:
             if not hasattr(request.user, 'customer_profile'):
