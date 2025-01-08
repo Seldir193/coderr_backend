@@ -318,10 +318,10 @@ class CustomerProfileListView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-   
+
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser,FormParser,JSONParser]
 
     def get(self, request, pk, format=None):
         """
@@ -357,7 +357,6 @@ class ProfileView(APIView):
             "created_at": user.date_joined.strftime('%Y-%m-%dT%H:%M:%SZ'),
         }
         return Response(response_data, status=status.HTTP_200_OK)
-    
     
     def patch(self, request, pk, format=None):
         """
@@ -397,10 +396,11 @@ class ProfileView(APIView):
             "working_hours": getattr(profile, 'working_hours', None),
             "type": 'business' if hasattr(user, 'business_profile') else 'customer',
             "email": user.email,
-            "created_at": user.date_joined.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            #"created_at": user.date_joined.strftime('%Y-%m-%dT%H:%M:%SZ'),
         }
         return Response(response_data, status=status.HTTP_200_OK)
-    
+
+
 class BusinessProfileView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser] 
