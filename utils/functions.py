@@ -1,8 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Avg
-from coder_app.models import  Review,Order
-from rest_framework.exceptions import ValidationError
+from coder_app.models import  Review
 from coder_app.models import Review
 from django.contrib.auth.models import User
 from rest_framework.exceptions import NotFound
@@ -41,14 +40,4 @@ def get_user_or_error(user_id):
         raise NotFound({'error': 'User not found.'})
     return user
 
-#def count_completed_orders_for_user(user):
-    #"""
-    #Counts completed orders for a user based on their profile type.
-    #"""
-    #if hasattr(user, 'business_profile'):
-       # return Order.objects.filter(business_user_id=user, status='completed').count()
-   # elif hasattr(user, 'customer_profile'):
-       # return Order.objects.filter(user=user, status='completed').count()
-    #else:
-        #raise ValidationError({'error': 'User does not have a valid profile (business or customer).'})
-     #End of customerProfilView_logic.py
+

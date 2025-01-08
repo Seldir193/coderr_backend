@@ -27,7 +27,6 @@ from rest_framework.permissions import BasePermission
 from django_filters.rest_framework import DjangoFilterBackend
 
 
-
 class IsOwnerOrAdmin(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.user.is_staff:
@@ -55,17 +54,14 @@ class CustomPagination(PageNumberPagination):
             'results': data,
         })
         
-        
 
 class OfferListView(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
-    #parser_classes = [MultiPartParser, JSONParser]
     filter_backends = [DjangoFilterBackend]
     filterset_class = OfferFilter
     pagination_class = CustomPagination
   
-
     def get_queryset(self):
         """
         Gibt die Basis-QuerySet mit Annotationen zurück.
@@ -123,75 +119,75 @@ class OfferListView(APIView):
             }
             return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
     
 class OfferDetailView(APIView):
-    permission_classes = [IsAuthenticated, IsOwnerOrAdmin] 
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
 
     def get_object(self, id):
         try:
             return Offer.objects.get(id=id)
         except Offer.DoesNotExist:
             return None
-        
+
     def get(self, request, id, format=None):
         offer = self.get_object(id)
         if not offer:
             return Response({"error": "Offer not found."}, status=status.HTTP_404_NOT_FOUND)
         serializer = OfferSerializer(offer, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
     def patch(self, request, id, format=None):
         try:
             offer = Offer.objects.get(id=id, user=request.user)
         except Offer.DoesNotExist:
             return Response({"error": "Offer not found or you do not own this offer."}, status=status.HTTP_404_NOT_FOUND)
 
-        details_data = request.data.pop('details', [])
+        details_data = request.data.pop('details', None)
         serializer = OfferSerializer(offer, data=request.data, partial=True, context={'request': request})
-    
+
         if serializer.is_valid():
             offer = serializer.save()
-            
-            existing_details = {detail.id: detail for detail in offer.details.all()}
-            updated_ids = set()
 
-            for detail_data in details_data:
-                detail_id = detail_data.get('id')
-                if detail_id and detail_id in existing_details:
-                    detail_instance = existing_details[detail_id]
-                
-                    detail_instance.variant_title = detail_data.get('title', detail_instance.variant_title)
-                    detail_instance.variant_price = detail_data.get('price', detail_instance.variant_price)
-                    detail_instance.revision_limit = detail_data.get('revisions', detail_instance.revision_limit)
-                    detail_instance.delivery_time_in_days = detail_data.get('delivery_time_in_days', detail_instance.delivery_time_in_days)
-                    detail_instance.features = detail_data.get('features', detail_instance.features)
-                    detail_instance.offer_type = detail_data.get('offer_type', detail_instance.offer_type)
-                
-                    detail_instance.save()
-                    updated_ids.add(detail_id)
-                else:
-                    OfferDetail.objects.create(
-                        offer=offer,
-                        variant_title=detail_data['title'],
-                        variant_price=detail_data['price'],
-                        revision_limit=detail_data['revisions'],
-                        delivery_time_in_days=detail_data['delivery_time_in_days'],
-                        features=detail_data['features'],
-                        offer_type=detail_data['offer_type'],
-                    )
+            if details_data:
+                existing_details = {detail.id: detail for detail in offer.details.all()}
+                updated_ids = set()
 
-            for detail_id in existing_details.keys():
-                if detail_id not in updated_ids:
-                    existing_details[detail_id].delete()
+                for detail_data in details_data:
+                    detail_id = detail_data.get('id')
+                    if detail_id and detail_id in existing_details:
+                        
+                        detail_instance = existing_details[detail_id]
+                        detail_instance.variant_title = detail_data.get('title', detail_instance.variant_title)
+                        detail_instance.variant_price = detail_data.get('price', detail_instance.variant_price)
+                        detail_instance.revision_limit = detail_data.get('revisions', detail_instance.revision_limit)
+                        detail_instance.delivery_time_in_days = detail_data.get('delivery_time_in_days', detail_instance.delivery_time_in_days)
+                        detail_instance.features = detail_data.get('features', detail_instance.features)
+                        detail_instance.offer_type = detail_data.get('offer_type', detail_instance.offer_type)
+                        detail_instance.save()
+                        updated_ids.add(detail_id)
+                    else:
                     
+                        OfferDetail.objects.create(
+                            offer=offer,
+                            variant_title=detail_data['title'],
+                            variant_price=detail_data['price'],
+                            revision_limit=detail_data['revisions'],
+                            delivery_time_in_days=detail_data['delivery_time_in_days'],
+                            features=detail_data['features'],
+                            offer_type=detail_data['offer_type'],
+                        )
+
+                for detail_id in existing_details.keys():
+                    if detail_id not in updated_ids:
+                        existing_details[detail_id].delete()
+
             response_data = {
                 "id": offer.id,
                 "title": offer.title,
                 "details": OfferDetailFullSerializer(offer.details.all(), many=True).data,
             }
             return Response(response_data, status=status.HTTP_200_OK)
-    
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, id, format=None):
@@ -204,6 +200,8 @@ class OfferDetailView(APIView):
                 {"error": "Offer not found or you do not have permission to delete this offer."},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+ 
     
 class OfferDetailRetrieveView(RetrieveAPIView):
     """
@@ -214,8 +212,6 @@ class OfferDetailRetrieveView(RetrieveAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
     lookup_field = 'id'
     
-
-
 
 
 class RegistrationView(APIView):
@@ -322,6 +318,7 @@ class CustomerProfileListView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+   
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
@@ -360,7 +357,8 @@ class ProfileView(APIView):
             "created_at": user.date_joined.strftime('%Y-%m-%dT%H:%M:%SZ'),
         }
         return Response(response_data, status=status.HTTP_200_OK)
-
+    
+    
     def patch(self, request, pk, format=None):
         """
         Update the profile data for a specific user.
@@ -402,8 +400,7 @@ class ProfileView(APIView):
             "created_at": user.date_joined.strftime('%Y-%m-%dT%H:%M:%SZ'),
         }
         return Response(response_data, status=status.HTTP_200_OK)
-
-
+    
 class BusinessProfileView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser] 
@@ -627,17 +624,15 @@ class BaseInfoView(APIView):
             average_rating = calculate_average_rating()
 
             data = {
-                "offer_count": offer_count,  
-                "review_count": review_count,  
-                "business_profile_count": business_profile_count,  
-                "average_rating": round(average_rating, 1)  
+                "review_count": review_count,
+                "average_rating": round(average_rating, 1) ,
+                "business_profile_count": business_profile_count, 
+                "offer_count": offer_count,
             }
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
   
-
-
 
 class OrderListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -676,12 +671,13 @@ class OrderListView(APIView):
         )
         serializer = OrderSerializer(order)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
+    
 
 class OrderDetailView(APIView):
     permission_classes = [IsAuthenticated]
-    def get(self, request, id):
-        order = get_object_or_404(Order, id=id)
+    
+    def get(self, request, order_id):  
+        order = get_object_or_404(Order, id=order_id)
         serializer = OrderSerializer(order)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -704,20 +700,29 @@ class OrderDetailView(APIView):
 
     def delete(self, request, order_id):
         try:
-            order = Order.objects.get(id=order_id, customer_user=request.user)
+            order = Order.objects.get(id=order_id, business_user=request.user)
             order.delete()
             return Response({}, status=status.HTTP_200_OK)
         except Order.DoesNotExist:
             return Response({"error": "Order not found or not authorized."}, status=status.HTTP_404_NOT_FOUND)
-
+        
 class OrderCountView(APIView):
     def get(self, request, business_user_id):
-        business_user = get_object_or_404(User, id=business_user_id)
-        count = Order.objects.filter(business_user=business_user, status='in_progress').count()
-        return Response({"order_count": count}, status=status.HTTP_200_OK)
+        try:
+            business_user = User.objects.get(id=business_user_id)
+        except User.DoesNotExist:
+            return Response({"error": "Business user not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        order_count = Order.objects.filter(business_user=business_user, status='in_progress').count()
+        return Response({"order_count": order_count}, status=status.HTTP_200_OK)
+
 
 class CompletedOrderCountView(APIView):
     def get(self, request, business_user_id):
-        business_user = get_object_or_404(User, id=business_user_id)
-        count = Order.objects.filter(business_user=business_user, status='completed').count()
-        return Response({"completed_order_count": count}, status=status.HTTP_200_OK)
+        try:
+            business_user = User.objects.get(id=business_user_id)
+        except User.DoesNotExist:
+            return Response({"error": "Business user not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        completed_order_count = Order.objects.filter(business_user=business_user, status='completed').count()
+        return Response({"completed_order_count": completed_order_count}, status=status.HTTP_200_OK)

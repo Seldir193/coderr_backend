@@ -91,7 +91,6 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
     
     
-    
 class OfferDetailSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
 
@@ -103,8 +102,6 @@ class OfferDetailSerializer(serializers.ModelSerializer):
         return f"/offerdetails/{obj.id}/"
     
 
-
-    
 class OfferDetailFullSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source='variant_title')
     #price = serializers.DecimalField(source='variant_price', max_digits=10, decimal_places=2)
@@ -139,7 +136,6 @@ class OfferDetailFullSerializer(serializers.ModelSerializer):
         return float(Decimal(obj.variant_price).quantize(Decimal('0.00')))
     
   
-    
 class OfferSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     details = serializers.SerializerMethodField()
@@ -167,17 +163,13 @@ class OfferSerializer(serializers.ModelSerializer):
             return OfferDetailFullSerializer(obj.details.all(), many=True).data
         return OfferDetailSerializer(obj.details.all(), many=True).data
 
-   
-    
-    
+
     def get_min_price(self, obj):
         min_price = obj.details.aggregate(min_price=Min('variant_price'))['min_price']
         if min_price is not None:
           return float(Decimal(min_price).quantize(Decimal('0.00')))
         return None
 
-    
-    
     def get_min_delivery_time(self, obj):
         return obj.details.aggregate(min_delivery_time=Min('delivery_time_in_days'))['min_delivery_time']
 
@@ -189,8 +181,6 @@ class OfferSerializer(serializers.ModelSerializer):
             "username": user.username,
         }
         
-    
-
     def create(self, validated_data):
         details_data = self.initial_data.get('details', [])
         print("Details received in serializer:", details_data)
@@ -200,10 +190,7 @@ class OfferSerializer(serializers.ModelSerializer):
         #offer = Offer.objects.create(user=self.context['request'].user, **validated_data)
         
         image = validated_data.pop('image', None)
-        
-    
         offer = Offer.objects.create(user=user, image=image, **validated_data)
-        
         
         for detail_data in details_data:
             OfferDetail.objects.create(
@@ -216,14 +203,6 @@ class OfferSerializer(serializers.ModelSerializer):
                 offer_type=detail_data['offer_type']
             )
         return offer
-
-
-        
-   
-        
-         
-    
-   
 
     def update(self, instance, validated_data):
         details_data = self.initial_data.get('details', [])
@@ -269,9 +248,6 @@ class OfferSerializer(serializers.ModelSerializer):
 
         return instance
 
-
-
- 
 
 class BusinessProfileSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer(read_only=True)
@@ -321,8 +297,6 @@ class BusinessProfileSerializer(serializers.ModelSerializer):
             instance.user.save()
         return instance
     
-
-
 
 class OrderSerializer(serializers.ModelSerializer):
     customer_user = serializers.PrimaryKeyRelatedField(source='customer_user.id', read_only=True)
