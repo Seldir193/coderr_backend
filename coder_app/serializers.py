@@ -90,6 +90,8 @@ class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
     
+    
+    
 class OfferDetailSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
 
@@ -98,10 +100,10 @@ class OfferDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'url']
 
     def get_url(self, obj):
-        """
-        Gibt die relative URL für das Angebotsdetail zurück.
-        """
         return f"/offerdetails/{obj.id}/"
+    
+
+
     
 class OfferDetailFullSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source='variant_title')
@@ -136,6 +138,7 @@ class OfferDetailFullSerializer(serializers.ModelSerializer):
     def get_price(self, obj):
         return float(Decimal(obj.variant_price).quantize(Decimal('0.00')))
     
+  
     
 class OfferSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -146,6 +149,7 @@ class OfferSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
     
+    
     class Meta:
         model = Offer
         fields = [
@@ -155,17 +159,24 @@ class OfferSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'user', 'min_price', 'min_delivery_time', 'created_at', 'updated_at']
         
+    
     def get_details(self, obj):
         request = self.context.get('request')
+        print("View Name:", request.resolver_match.view_name)
         if request and request.resolver_match.view_name == 'offer-detail':
             return OfferDetailFullSerializer(obj.details.all(), many=True).data
         return OfferDetailSerializer(obj.details.all(), many=True).data
 
+   
+    
+    
     def get_min_price(self, obj):
         min_price = obj.details.aggregate(min_price=Min('variant_price'))['min_price']
         if min_price is not None:
-            return float(Decimal(min_price).quantize(Decimal('0.00')))
+          return float(Decimal(min_price).quantize(Decimal('0.00')))
         return None
+
+    
     
     def get_min_delivery_time(self, obj):
         return obj.details.aggregate(min_delivery_time=Min('delivery_time_in_days'))['min_delivery_time']
@@ -178,16 +189,21 @@ class OfferSerializer(serializers.ModelSerializer):
             "username": user.username,
         }
         
+    
+
     def create(self, validated_data):
         details_data = self.initial_data.get('details', [])
+        print("Details received in serializer:", details_data)
         user = self.context['request'].user
         #offer = Offer.objects.create(user=user, **validated_data)
         
+        #offer = Offer.objects.create(user=self.context['request'].user, **validated_data)
+        
         image = validated_data.pop('image', None)
-        print("Image beim Erstellen:", image)
+        
     
         offer = Offer.objects.create(user=user, image=image, **validated_data)
-        print("Offer erstellt mit Bild:", offer.image.url if offer.image else "Kein Bild")
+        
         
         for detail_data in details_data:
             OfferDetail.objects.create(
@@ -200,6 +216,14 @@ class OfferSerializer(serializers.ModelSerializer):
                 offer_type=detail_data['offer_type']
             )
         return offer
+
+
+        
+   
+        
+         
+    
+   
 
     def update(self, instance, validated_data):
         details_data = self.initial_data.get('details', [])
@@ -245,6 +269,9 @@ class OfferSerializer(serializers.ModelSerializer):
 
         return instance
 
+
+
+ 
 
 class BusinessProfileSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer(read_only=True)
@@ -293,6 +320,8 @@ class BusinessProfileSerializer(serializers.ModelSerializer):
             instance.user.email = user_data['email']
             instance.user.save()
         return instance
+    
+
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -371,6 +400,7 @@ class OrderSerializer(serializers.ModelSerializer):
         return instance
 
 
+
 class CustomerProfileSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
@@ -388,5 +418,3 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = ['id', 'business_user', 'reviewer', 'rating', 'description', 'created_at', 'updated_at']
         read_only_fields = ['id', 'reviewer', 'created_at', 'updated_at']
         
-  
-

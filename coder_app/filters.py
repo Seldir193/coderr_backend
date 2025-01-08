@@ -12,7 +12,7 @@ class OfferFilter(filters.FilterSet):
     class Meta:
         model = Offer
         fields = ["creator_id", "min_price", "max_price", "max_delivery_time"]
-
+        
     def filter_min_price(self, queryset, name, value):
         """
         Filtert Angebote basierend auf dem Mindestpreis.
@@ -24,6 +24,7 @@ class OfferFilter(filters.FilterSet):
         Filtert Angebote basierend auf dem Höchstpreis.
         """
         return queryset.annotate(min_price=Min('details__variant_price')).filter(min_price__lte=value)
+
 
     def filter_search(self, queryset, name, value):
         """

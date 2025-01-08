@@ -9,8 +9,8 @@ from coder_app.serializers import (
     ReviewSerializer, RegistrationSerializer,OrderSerializer,Order,User,OfferDetailFullSerializer
 )
 from coder_app.models import Offer, BusinessProfile, CustomerProfile, Review
-from rest_framework.parsers import MultiPartParser, FormParser,JSONParser
-
+#from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError
 from coder_app.models import Offer,OfferDetail,Order
@@ -25,7 +25,7 @@ from utils.utils import (create_token_for_user, authenticate_user)
 from django.db.models import Min
 from rest_framework.permissions import BasePermission
 from django_filters.rest_framework import DjangoFilterBackend
-import json
+
 
 
 class IsOwnerOrAdmin(BasePermission):
@@ -54,13 +54,17 @@ class CustomPagination(PageNumberPagination):
             'current_page': self.page.number,
             'results': data,
         })
+        
+        
 
 class OfferListView(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
-    pagination_class = CustomPagination
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+    #parser_classes = [MultiPartParser, JSONParser]
     filter_backends = [DjangoFilterBackend]
     filterset_class = OfferFilter
-    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    pagination_class = CustomPagination
+  
 
     def get_queryset(self):
         """
@@ -99,8 +103,8 @@ class OfferListView(APIView):
             )
 
         details = request.data.get("details", [])
+        
         if len(details) != 3 or not all(d["offer_type"] in ["basic", "standard", "premium"] for d in details):
-            print("REQUEST DATA:", request.data)
             return Response(
                 {"error": "You must provide exactly three details with offer_type: basic, standard, and premium."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -119,7 +123,7 @@ class OfferListView(APIView):
             }
             return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-   
+        
     
 class OfferDetailView(APIView):
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin] 
@@ -129,7 +133,7 @@ class OfferDetailView(APIView):
             return Offer.objects.get(id=id)
         except Offer.DoesNotExist:
             return None
-
+        
     def get(self, request, id, format=None):
         offer = self.get_object(id)
         if not offer:
@@ -200,8 +204,7 @@ class OfferDetailView(APIView):
                 {"error": "Offer not found or you do not have permission to delete this offer."},
                 status=status.HTTP_404_NOT_FOUND
             )
-
-
+    
 class OfferDetailRetrieveView(RetrieveAPIView):
     """
     Gibt die vollständigen Details eines spezifischen Angebotsdetails zurück.
@@ -634,6 +637,8 @@ class BaseInfoView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
   
 
+
+
 class OrderListView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -671,6 +676,7 @@ class OrderListView(APIView):
         )
         serializer = OrderSerializer(order)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 class OrderDetailView(APIView):
     permission_classes = [IsAuthenticated]
