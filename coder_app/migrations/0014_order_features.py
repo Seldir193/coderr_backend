@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('coder_app', '0013_alter_review_unique_together_and_more'),
+        ("coder_app", "0013_alter_review_unique_together_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='order',
-            name='features',
+            model_name="order",
+            name="features",
             field=models.JSONField(blank=True, default=list),
         ),
     ]

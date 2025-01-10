@@ -8,23 +8,32 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('coder_app', '0012_alter_review_business_user_alter_review_offer_and_more'),
+        ("coder_app", "0012_alter_review_business_user_alter_review_offer_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='review',
+            name="review",
             unique_together=set(),
         ),
         migrations.AlterField(
-            model_name='review',
-            name='business_user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='business_reviews', to=settings.AUTH_USER_MODEL),
+            model_name="review",
+            name="business_user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="business_reviews",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AlterField(
-            model_name='review',
-            name='offer',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, related_name='offer_reviews', to='coder_app.offer'),
+            model_name="review",
+            name="offer",
+            field=models.ForeignKey(
+                default=1,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="offer_reviews",
+                to="coder_app.offer",
+            ),
         ),
     ]

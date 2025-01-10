@@ -8,57 +8,82 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('coder_app', '0025_remove_offerdetail_additional_details'),
+        ("coder_app", "0025_remove_offerdetail_additional_details"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='order',
-            name='offer_detail_id',
+            model_name="order",
+            name="offer_detail_id",
         ),
         migrations.RemoveField(
-            model_name='order',
-            name='user',
+            model_name="order",
+            name="user",
         ),
         migrations.AddField(
-            model_name='order',
-            name='business_user',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='business_orders', to=settings.AUTH_USER_MODEL),
+            model_name="order",
+            name="business_user",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="business_orders",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='order',
-            name='customer_user',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, related_name='customer_orders', to=settings.AUTH_USER_MODEL),
+            model_name="order",
+            name="customer_user",
+            field=models.ForeignKey(
+                default=1,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="customer_orders",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='order',
-            name='delivery_time_in_days',
+            model_name="order",
+            name="delivery_time_in_days",
             field=models.IntegerField(default=7),
         ),
         migrations.AddField(
-            model_name='order',
-            name='offer_detail',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='order_details', to='coder_app.offerdetail'),
+            model_name="order",
+            name="offer_detail",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="order_details",
+                to="coder_app.offerdetail",
+            ),
         ),
         migrations.AddField(
-            model_name='order',
-            name='offer_type',
-            field=models.CharField(choices=[('basic', 'Basic'), ('standard', 'Standard'), ('premium', 'Premium')], default='basic', max_length=50),
+            model_name="order",
+            name="offer_type",
+            field=models.CharField(
+                choices=[
+                    ("basic", "Basic"),
+                    ("standard", "Standard"),
+                    ("premium", "Premium"),
+                ],
+                default="basic",
+                max_length=50,
+            ),
         ),
         migrations.AddField(
-            model_name='order',
-            name='price',
+            model_name="order",
+            name="price",
             field=models.DecimalField(decimal_places=2, default=0.0, max_digits=10),
         ),
         migrations.AddField(
-            model_name='order',
-            name='revisions',
+            model_name="order",
+            name="revisions",
             field=models.IntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='order',
-            name='title',
+            model_name="order",
+            name="title",
             field=models.CharField(blank=True, max_length=255),
         ),
     ]

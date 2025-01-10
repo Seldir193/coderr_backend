@@ -159,6 +159,8 @@ python manage.py test
   Retrieves the details of a specific offer.
 - **POST** `/offers/`  
   Creates a new offer.
+- **GET** `/offerdetails/<int:id>/`
+  Retrieves the details of a specific offer.
 
 ### Base Information
 - **GET** `/base-info/`  
@@ -166,22 +168,128 @@ python manage.py test
 
 ---
 
+
 ## Helper Functions
 
 The backend includes several helper functions for different purposes:
 
-- **`profile_helpers.py`**: Functions for user profile validation and processing.
-- **`utils.py`**: Utility functions like string formatting and data manipulation.
-- **`functions.py`**: Business-specific logic used across multiple views.
+### `functions.py`
+Contains logic for reusable functionalities like:
+
+- `get_customer_profile_or_error(user)`: Retrieves customer profiles or returns an error if not found.
+- `get_user_or_error(user_id)`: Fetches a user by ID or returns an error.
+- `create_or_update_details(offer, details_data)`: Handles offer details, creating or updating them as needed.
+- `handle_permission_denied(exception)`: Handles `PermissionDenied` exceptions.
+- `format_profile_response(user, profile, profile_type)`: Formats profile data for responses.
+
+### `profile_helpers.py`
+Helper functions for profile-related operations:
+
+- `get_user_type(obj)`: Returns the type of the user (superuser, business, customer, or unknown).
+- `get_user_profile_image(obj)`: Retrieves the profile image URL based on the user's profile type.
+- `validate_username_exists(username, errors)`: Validates if a username already exists.
+- `validate_email_exists(email, errors)`: Validates if an email already exists.
+- `validate_password_match(password, repeated_password, errors)`: Checks if the password and repeated password match.
+- `create_new_user(validated_data)`: Creates a new user and sets their password.
+- `create_user_profile(user, profile_type, validated_data)`: Creates the appropriate profile for the user based on the profile type.
+
+### `serializers_helpers.py`
+Includes utilities for serializers:
+
+- `calculate_min_price(offer)`: Calculates the minimum price for an offer.
+- `calculate_min_delivery_time(offer)`: Calculates the minimum delivery time for an offer.
+- `extract_user_details(obj)`: Extracts user details for an offer.
+- `create_offer_details(offer, details_data)`: Creates offer details for an offer.
+- `update_main_instance(instance, validated_data)`: Updates the main instance of an offer.
+- `update_offer_details(instance, details_data)`: Updates the offer details of an offer.
+- `calculate_avg_rating(obj)`: Calculates the average rating for a business profile.
+- `count_pending_orders(obj)`: Counts the number of pending orders for a business profile.
+
+### `utils.py`
+Utility functions like string formatting and data manipulation:
+
+- `set_order_defaults(order)`: Sets default values for an order before saving.
+- `authenticate_user(username, password)`: Authenticates a user using username and password.
+- `create_token_for_user(user)`: Creates or retrieves an authentication token for a user.
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Fork the repository, create a new branch, and submit a pull request with your changes.
+Contributions are welcome! Fork the repository, create a new branch, and submit a pull request. 
+
+Please ensure that your code adheres to the following standards:
+- **Clean Code principles**: Write simple, understandable, and maintainable code.
+- **PEP 8 style guide**: Follow Python's official style guide to ensure consistency and readability.
 
 ---
 
 ## License
 
 This project is licensed under the MIT License. For more details, see the [LICENSE](LICENSE) file.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

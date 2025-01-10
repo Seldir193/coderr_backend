@@ -119,6 +119,8 @@ The Coderr backend is a RESTful API developed using **Django** and **Django REST
   Create a new offer.
 - **GET** `/offers/<int:id>/`  
   Retrieve offer details.
+- **GET** `/offerdetails/<int:id>/`
+  Retrieves the details of a specific offer.
 
 ### Orders
 - **GET** `/orders/`  
@@ -148,14 +150,14 @@ The Coderr backend is a RESTful API developed using **Django** and **Django REST
 
 ## Helper Functions
 
-### `profile_helpers.py`
-- Contains validation and processing logic for user profiles.
+The backend includes several helper files to streamline and organize the logic:
 
-### `utils.py`
-- General utilities like string formatting or date conversion.
+- **`profile_helpers.py`**: Contains validation and processing logic for user profiles.
+- **`utils.py`**: General utilities like string formatting or date conversion.
+- **`functions.py`**: Business-specific logic used across various views.
+- **`serializers_helpers.py`**: Helper functions for serializing data.
 
-### `functions.py`
-- Business-specific logic used across various views.
+For detailed explanations of each helper function, including their purpose and usage, please refer to the **[README.md](README.md)** file.
 
 ---
 
@@ -200,7 +202,11 @@ python manage.py test
 
 ## Contributing
 
-Contributions are welcome! Fork the repository, create a new branch, and submit a pull request.
+Contributions are welcome! Fork the repository, create a new branch, and submit a pull request. 
+
+Please ensure that your code adheres to the following standards:
+- **Clean Code principles**: Write simple, understandable, and maintainable code.
+- **PEP 8 style guide**: Follow Python's official style guide to ensure consistency and readability.
 
 ---
 

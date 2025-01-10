@@ -6,16 +6,16 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('coder_app', '0007_alter_review_offer_alter_review_unique_together'),
+        ("coder_app", "0007_alter_review_offer_alter_review_unique_together"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='review',
+            name="review",
             unique_together=set(),
         ),
         migrations.RemoveField(
-            model_name='review',
-            name='offer',
+            model_name="review",
+            name="offer",
         ),
     ]

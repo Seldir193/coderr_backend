@@ -8,9 +8,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']  
 
-
-
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -116,8 +113,6 @@ REST_FRAMEWORK = {
         'question-delete': '50/day',
         'question-options': '50/day',
     },
-   
-    
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

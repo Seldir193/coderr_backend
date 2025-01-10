@@ -7,13 +7,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('coder_app', '0008_alter_review_unique_together_remove_review_offer'),
+        ("coder_app", "0008_alter_review_unique_together_remove_review_offer"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='review',
-            name='offer',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, related_name='offer_reviews', to='coder_app.offer'),
+            model_name="review",
+            name="offer",
+            field=models.ForeignKey(
+                default=1,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="offer_reviews",
+                to="coder_app.offer",
+            ),
         ),
     ]

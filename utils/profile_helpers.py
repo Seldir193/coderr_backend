@@ -3,6 +3,7 @@ from rest_framework.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.utils.timezone import now
 
+
 # serializers
 
 # userProfileSerializers_logic.py
@@ -10,8 +11,6 @@ def get_user_type(obj):
     """
     Returns the type of the user: superuser, business, customer, or unknown.
     """
-    #if obj.is_superuser:
-        #return "superuser"
     if hasattr(obj, 'business_profile'):
         return "business"
     elif hasattr(obj, 'customer_profile'):
@@ -36,6 +35,30 @@ def get_user_profile_image(obj):
 # End of userProfileSerializers_logic.py
 
 # registrationSerializers_logic.py
+def validate_username_exists(username, errors):
+    """
+    Checks if the username already exists.
+    """
+    if User.objects.filter(username=username).exists():
+        errors.setdefault("username", []).append("Dieser Benutzername ist bereits vergeben.")
+
+def validate_email_exists(email, errors):
+    """
+    Checks if the email already exists.
+    """
+    if User.objects.filter(email=email).exists():
+        errors.setdefault("email", []).append("Diese E-Mail-Adresse wird bereits verwendet.")
+
+def validate_password_match(password, repeated_password, errors):
+    """
+    Checks if the password and repeated password match.
+    """
+    if password != repeated_password:
+        errors.setdefault("password", []).append("Das Passwort ist nicht gleich mit dem wiederholten Passwort.")
+
+
+
+
 def create_new_user(validated_data):
     """
     Creates a new user and sets their password.
@@ -69,6 +92,26 @@ def create_user_profile(user, profile_type, validated_data):
     else:
         raise ValidationError("Unknown profile type.")
 # End of registrationSerializers_logic.py
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
