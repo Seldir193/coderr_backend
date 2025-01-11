@@ -29,7 +29,7 @@ class OfferFilter(filters.FilterSet):
         """
         Filter offers by maximum price.
         """
-        
+
         return queryset.annotate(min_price=Min("details__variant_price")).filter(
             min_price__lte=value
         )

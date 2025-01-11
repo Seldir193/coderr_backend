@@ -2,13 +2,17 @@ from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 
+
 # viesw.py
 # registrationsView_logic.py
 def create_token_for_user(user):
     """Creates or retrieves a token for the user."""
     token, created = Token.objects.get_or_create(user=user)
     return token.key
+
+
 # End of registrationsView_logic.py
+
 
 # loginView_logic.py
 def authenticate_user(username, password):
@@ -17,9 +21,9 @@ def authenticate_user(username, password):
     if not user:
         raise ValidationError("Invalid credentials")
     return user
+
+
 # End of loginView_logic.py
-
-
 
 
 # model.py
@@ -42,4 +46,6 @@ def set_order_defaults(order):
 
     if not order.delivery_time_in_days:
         order.delivery_time_in_days = order.offer_detail.delivery_time_in_days
+
+
 # End of order_logic.py

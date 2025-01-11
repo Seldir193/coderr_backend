@@ -70,7 +70,7 @@ from utils.functions import (
     handle_permission_denied,
     update_profile_data,
     update_user_data,
-    CustomPagination
+    CustomPagination,
 )
 from utils.utils import authenticate_user, create_token_for_user
 
@@ -79,7 +79,7 @@ class IsOwnerOrAdmin(BasePermission):
     """
     Allows access to admins or the object's owner.
     """
-    
+
     def has_object_permission(self, request, view, obj):
         if request.user.is_staff:
             return True
@@ -99,6 +99,7 @@ class OfferListView(APIView):
     """
     Handles operations related to listing and creating offers.
     """
+
     permission_classes = [IsAuthenticatedOrReadOnly]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
     filter_backends = [DjangoFilterBackend]
@@ -133,8 +134,12 @@ class OfferListView(APIView):
         if not filterset.is_valid():
             return Response(filterset.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        queryset = apply_ordering(filterset.qs, request.query_params.get("ordering", "-updated_at"))
-        return get_paginated_response(queryset, request, OfferSerializer, CustomPagination)
+        queryset = apply_ordering(
+            filterset.qs, request.query_params.get("ordering", "-updated_at")
+        )
+        return get_paginated_response(
+            queryset, request, OfferSerializer, CustomPagination
+        )
 
     def post(self, request, *args, **kwargs):
         """
@@ -167,7 +172,6 @@ class OfferListView(APIView):
             return Response(response_data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 class OfferDetailView(APIView):
@@ -688,9 +692,9 @@ class OrderDetailView(APIView):
         if not hasattr(request.user, "business_profile"):
             return Response(
                 {"error": "Only business can update orders."},
-                 status=status.HTTP_403_FORBIDDEN,
-        )
-        
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         try:
             order = Order.objects.get(id=order_id, business_user=request.user)
             update_order_status(order, request.data.get("status"))

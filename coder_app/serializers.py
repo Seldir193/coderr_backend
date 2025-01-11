@@ -21,7 +21,7 @@ from utils.profile_helpers import (
     validate_username_exists,
 )
 from django.core.validators import MinValueValidator
-from utils.serializers_helpers import( 
+from utils.serializers_helpers import (
     calculate_min_price,
     calculate_min_delivery_time,
     extract_user_details,
@@ -35,8 +35,9 @@ from utils.serializers_helpers import(
     map_status_to_display,
     validate_order_data,
     create_order_with_details,
-    update_order_instance
+    update_order_instance,
 )
+
 
 class UserProfileSerializer(serializers.ModelSerializer):
     tel = serializers.CharField(source="business_profile.tel", read_only=True)
@@ -71,7 +72,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         Retrieves the profile image URL based on the user profile type.
         """
         return get_user_profile_image(obj)
-    
+
+
 class RegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, validators=[validate_password])
@@ -99,7 +101,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
         if "type" in self.initial_data:
             data["profile_type"] = self.initial_data["type"]
-            
+
         if errors:
             raise serializers.ValidationError(errors)
 
@@ -129,7 +131,7 @@ class OfferDetailSerializer(serializers.ModelSerializer):
 
     def get_url(self, obj):
         return f"/offerdetails/{obj.id}/"
-    
+
 
 class OfferDetailFullSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source="variant_title")
@@ -169,6 +171,7 @@ class OfferDetailFullSerializer(serializers.ModelSerializer):
     def get_price(self, obj):
         """Format the price to two decimal places."""
         return float(Decimal(obj.variant_price).quantize(Decimal("0.00")))
+
 
 class OfferSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -229,11 +232,11 @@ class OfferSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         details_data = self.initial_data.get("details", [])
         if details_data is None:
-            details_data = []  
+            details_data = []
         update_main_instance(instance, validated_data)
         update_offer_details(instance, details_data)
         return instance
-    
+
 
 class BusinessProfileSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer(read_only=True)
@@ -241,7 +244,7 @@ class BusinessProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
     avg_rating = serializers.SerializerMethodField()
     pending_orders = serializers.SerializerMethodField()
-    file = serializers.ImageField(source="file", required=False)
+    file = serializers.ImageField( required=False)
     location = serializers.CharField(required=False)
     working_hours = serializers.CharField(required=False)
 
@@ -283,8 +286,8 @@ class BusinessProfileSerializer(serializers.ModelSerializer):
         update_instance_fields(instance, validated_data)
         update_user_email(instance, validated_data.pop("user", {}))
         return instance
-    
-    
+
+
 class OrderSerializer(serializers.ModelSerializer):
     customer_user = serializers.PrimaryKeyRelatedField(
         source="customer_user.id", read_only=True
@@ -339,7 +342,6 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         return update_order_instance(instance, validated_data)
-
 
 
 class CustomerProfileSerializer(serializers.ModelSerializer):
