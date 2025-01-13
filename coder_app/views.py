@@ -149,18 +149,18 @@ class OfferListView(APIView):
             request (HttpRequest): The incoming request.
 
         Returns:
-            Response: The created offer data or error message.
+            Response: The created offer data or detail message.
         """
         if not hasattr(request.user, "business_profile"):
             return Response(
-                {"error": "Only business users can create offers."},
+                {"detail": "Only business users can create offers."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
         if not validate_details(request.data.get("details", [])):
             return Response(
                 {
-                    "error": "You must provide exactly three details with offer_type: basic, standard, and premium."
+                    "detail": "You must provide exactly three details with offer_type: basic, standard, and premium."
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -184,7 +184,7 @@ class OfferDetailView(APIView):
         offer = get_offer_or_404(id)
         if not offer:
             return Response(
-                {"error": "Offer not found."}, status=status.HTTP_404_NOT_FOUND
+                {"detail": "Offer not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
         serializer = OfferSerializer(offer, context={"request": request})
@@ -197,7 +197,7 @@ class OfferDetailView(APIView):
         offer = get_offer_or_404(id, user=request.user)
         if not offer:
             return Response(
-                {"error": "Offer not found or you do not own this offer."},
+                {"detail": "Offer not found or you do not own this offer."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -230,7 +230,7 @@ class OfferDetailView(APIView):
         if not offer:
             return Response(
                 {
-                    "error": "Offer not found or you do not have permission to delete this offer."
+                    "detail": "Offer not found or you do not have permission to delete this offer."
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
@@ -285,12 +285,12 @@ class LoginView(APIView):
             user = authenticate_user(username, password)
             if not user:
                 return Response(
-                    {"error": "Falsche Anmeldeinformationen."},
+                    {"detail": "Falsche Anmeldeinformationen."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         except ValidationError:
             return Response(
-                {"error": "Falsche Anmeldeinformationen oder ungültige Eingabe."},
+                {"detail": "Falsche Anmeldeinformationen oder ungültige Eingabe."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -530,7 +530,7 @@ class ReviewListCreateView(APIView):
         """
         if not is_customer(request.user):
             return Response(
-                {"error": "Only customers can create reviews."},
+                {"detail": "Only customers can create reviews."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -538,13 +538,13 @@ class ReviewListCreateView(APIView):
             business_user = get_business_user(request.data)
             if not is_business_user(business_user):
                 return Response(
-                    {"error": "The specified user is not a business user."},
+                    {"detail": "The specified user is not a business user."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
             if has_existing_review(request.user, business_user):
                 return Response(
-                    {"error": "You have already reviewed this business user."},
+                    {"detail": "You have already reviewed this business user."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -579,13 +579,13 @@ class ReviewDetailView(APIView):
             review = get_object_or_404(Review, id=id)
             if not hasattr(request.user, "customer_profile"):
                 return Response(
-                    {"error": "Only customers can edit reviews."},
+                    {"detail": "Only customers can edit reviews."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
             if review.reviewer != request.user:
                 return Response(
-                    {"error": "You are not authorized to edit this review."},
+                    {"detail": "You are not authorized to edit this review."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
@@ -605,7 +605,7 @@ class ReviewDetailView(APIView):
             review = get_object_or_404(Review, id=id)
             if review.reviewer != request.user and not request.user.is_staff:
                 return Response(
-                    {"error": "You are not authorized to delete this review."},
+                    {"detail": "You are not authorized to delete this review."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
             review.delete()
@@ -657,7 +657,7 @@ class OrderListView(APIView):
         """
         if not hasattr(request.user, "customer_profile"):
             return Response(
-                {"error": "Only customers can create orders."},
+                {"detail": "Only customers can create orders."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -691,7 +691,7 @@ class OrderDetailView(APIView):
         """
         if not hasattr(request.user, "business_profile"):
             return Response(
-                {"error": "Only business can update orders."},
+                {"detail": "Only business can update orders."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -702,7 +702,7 @@ class OrderDetailView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Order.DoesNotExist:
             return Response(
-                {"error": "Order not found or not authorized."},
+                {"detail": "Order not found or not authorized."},
                 status=status.HTTP_404_NOT_FOUND,
             )
         except ValueError as e:
@@ -720,7 +720,7 @@ class OrderDetailView(APIView):
             return Response({}, status=status.HTTP_200_OK)
         except Order.DoesNotExist:
             return Response(
-                {"error": "Order not found or not authorized."},
+                {"detail": "Order not found or not authorized."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 

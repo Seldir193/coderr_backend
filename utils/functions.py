@@ -16,11 +16,11 @@ from rest_framework.exceptions import PermissionDenied
 def get_customer_profile_or_error(user):
     """
     Checks if a user has a `customer_profile`.
-    Returns the profile or an error response if not found.
+    Returns the profile or an detail response if not found.
     """
     if not hasattr(user, "customer_profile"):
         return Response(
-            {"error": "Customer profile not found."}, status=status.HTTP_404_NOT_FOUND
+            {"detail": "Customer profile not found."}, status=status.HTTP_404_NOT_FOUND
         )
     return user.customer_profile
 
@@ -31,11 +31,11 @@ def get_customer_profile_or_error(user):
 # customerProfileView_logic.py
 def get_user_or_error(user_id):
     """
-    Fetches a user by ID or returns an error.
+    Fetches a user by ID or returns an detail.
     """
     user = User.objects.filter(id=user_id).first()
     if not user:
-        raise NotFound({"error": "User not found."})
+        raise NotFound({"detail": "User not found."})
     return user
 
 
@@ -158,7 +158,7 @@ def handle_permission_denied(exception):
     """
     Handle PermissionDenied exception.
     """
-    return Response({"error": str(exception)}, status=status.HTTP_403_FORBIDDEN)
+    return Response({"detail": str(exception)}, status=status.HTTP_403_FORBIDDEN)
 
 
 def handle_parse_error():
@@ -166,7 +166,7 @@ def handle_parse_error():
     Handle ParseError exception.
     """
     return Response(
-        {"error": "Ungültige oder fehlende Felder."},
+        {"detail": "Ungültige oder fehlende Felder."},
         status=status.HTTP_400_BAD_REQUEST,
     )
 
@@ -176,7 +176,7 @@ def handle_generic_error():
     Handle any unexpected errors.
     """
     return Response(
-        {"error": "Ein unerwarteter Fehler ist aufgetreten."},
+        {"detail": "Ein unerwarteter Fehler ist aufgetreten."},
         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
 
@@ -195,11 +195,11 @@ def check_user_and_profile(user, profile):
     """
     if not user:
         return Response(
-            {"error": "Benutzer nicht gefunden."}, status=status.HTTP_404_NOT_FOUND
+            {"detail": "Benutzer nicht gefunden."}, status=status.HTTP_404_NOT_FOUND
         )
     if not profile:
         return Response(
-            {"error": "Profil nicht gefunden."}, status=status.HTTP_404_NOT_FOUND
+            {"detail": "Profil nicht gefunden."}, status=status.HTTP_404_NOT_FOUND
         )
     return None
 
@@ -517,11 +517,11 @@ def check_user_and_profile(user, profile):
     """
     if not user:
         return Response(
-            {"error": "Benutzer nicht gefunden."}, status=status.HTTP_404_NOT_FOUND
+            {"detail": "Benutzer nicht gefunden."}, status=status.HTTP_404_NOT_FOUND
         )
     if not profile:
         return Response(
-            {"error": "Profil nicht gefunden."}, status=status.HTTP_404_NOT_FOUND
+            {"detail": "Profil nicht gefunden."}, status=status.HTTP_404_NOT_FOUND
         )
     return None
 
@@ -535,8 +535,8 @@ class CustomPagination(PageNumberPagination):
         return Response(
             {
                 "count": self.page.paginator.count,
-                "total_pages": self.page.paginator.num_pages,
-                "current_page": self.page.number,
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
                 "results": data,
             }
         )

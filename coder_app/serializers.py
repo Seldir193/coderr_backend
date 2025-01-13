@@ -2,7 +2,6 @@
 from decimal import Decimal, ROUND_DOWN
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from django.contrib.auth.password_validation import validate_password
 from coder_app.models import (
     Offer,
     BusinessProfile,
@@ -76,7 +75,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class RegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
-    password = serializers.CharField(write_only=True, validators=[validate_password])
+    password = serializers.CharField(write_only=True)
     repeated_password = serializers.CharField(write_only=True)
     profile_type = serializers.ChoiceField(
         choices=[("customer", "Customer"), ("business", "Business")],
