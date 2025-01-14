@@ -43,16 +43,14 @@ def get_user_or_error(user_id):
 
 
 # offerDetalView_logic.py
-def get_offer_or_404(offer_id, user=None):
+def get_offer_or_404(offer_id):
     """
-    Retrieves an offer by ID and optionally filters by user.
+    Retrieves an offer by ID. Raises NotFound if the offer doesn't exist.
     """
     try:
-        if user:
-            return Offer.objects.get(id=offer_id, user=user)
         return Offer.objects.get(id=offer_id)
     except Offer.DoesNotExist:
-        return None
+        raise NotFound({"detail": "Offer not found."})
 
 
 def create_or_update_details(offer, details_data):
@@ -234,6 +232,7 @@ def get_filtered_reviews(user, query_params):
     Filters reviews based on query parameters.
     """
     business_user_id = query_params.get("business_user_id")
+    reviewer_id = query_params.get("reviewer_id")
     ordering = query_params.get("ordering", "updated_at")
 
     if hasattr(user, "customer_profile") and not business_user_id:
@@ -242,6 +241,8 @@ def get_filtered_reviews(user, query_params):
     reviews = Review.objects.all()
     if business_user_id:
         reviews = reviews.filter(business_user_id=business_user_id)
+    if reviewer_id:
+        reviews = reviews.filter(reviewer_id=reviewer_id) 
     return reviews.order_by(ordering)
 
 
@@ -540,3 +541,15 @@ class CustomPagination(PageNumberPagination):
                 "results": data,
             }
         )
+
+# reviewDetailView_logic.py
+def get_review_or_404(review_id):
+    """
+    Retrieves a review by ID or raises a NotFound exception.
+    """
+    try:
+        return Review.objects.get(id=review_id)
+    except Review.DoesNotExist:
+        raise NotFound({"detail": "Review not found."})
+
+# End of reviewDetailView_logic.py

@@ -70,6 +70,7 @@ from utils.functions import (
     handle_permission_denied,
     update_profile_data,
     update_user_data,
+    get_review_or_404,
     CustomPagination,
 )
 from utils.utils import authenticate_user, create_token_for_user
@@ -174,6 +175,7 @@ class OfferListView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
 class OfferDetailView(APIView):
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
 
@@ -182,24 +184,22 @@ class OfferDetailView(APIView):
         Retrieves the details of a specific offer.
         """
         offer = get_offer_or_404(id)
-        if not offer:
-            return Response(
-                {"detail": "Offer not found."}, status=status.HTTP_404_NOT_FOUND
-            )
-
+        
         serializer = OfferSerializer(offer, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
-
+    
     def patch(self, request, id, format=None):
         """
         Updates an offer's data, including details.
         """
-        offer = get_offer_or_404(id, user=request.user)
-        if not offer:
+        
+        offer = get_offer_or_404(id)  
+
+        if offer.user != request.user:
             return Response(
-                {"detail": "Offer not found or you do not own this offer."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+                {"detail": "You do not have permission to update this offer."},
+                status=status.HTTP_403_FORBIDDEN,
+        )
 
         details_data = request.data.pop("details", None)
         serializer = OfferSerializer(
@@ -221,21 +221,21 @@ class OfferDetailView(APIView):
             return Response(response_data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
     def delete(self, request, id, format=None):
         """
         Deletes a specific offer.
         """
-        offer = get_offer_or_404(id, user=request.user)
-        if not offer:
+        offer = get_offer_or_404(id)  
+
+        if offer.user != request.user:
             return Response(
-                {
-                    "detail": "Offer not found or you do not have permission to delete this offer."
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+                {"detail": "You do not have permission to update this offer."},
+                status=status.HTTP_403_FORBIDDEN,
+        )
+        
         offer.delete()
-        return Response({}, status=status.HTTP_200_OK)
+        return Response({}, status=status.HTTP_204_NO_CONTENT)
 
 
 class OfferDetailRetrieveView(RetrieveAPIView):
@@ -547,7 +547,7 @@ class ReviewListCreateView(APIView):
                     {"detail": "You have already reviewed this business user."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
+                
             review_data, status_code = create_review(
                 request.data, request.user, business_user, {"request": request}
             )
@@ -560,14 +560,13 @@ class ReviewDetailView(APIView):
     """
     Handles operations on a specific review.
     """
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
         """
         Retrieves a review by its ID.
         """
-        review = get_object_or_404(Review, id=id)
+        review = get_review_or_404(id)  
         serializer = ReviewSerializer(review)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -575,44 +574,34 @@ class ReviewDetailView(APIView):
         """
         Partially updates a review.
         """
-        try:
-            review = get_object_or_404(Review, id=id)
-            if not hasattr(request.user, "customer_profile"):
-                return Response(
-                    {"detail": "Only customers can edit reviews."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        review = get_review_or_404(id) 
 
-            if review.reviewer != request.user:
-                return Response(
-                    {"detail": "You are not authorized to edit this review."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        if review.reviewer != request.user and not request.user.is_staff:
+            return Response(
+                {"detail": "You are not authorized to edit this review."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
-            serializer = ReviewSerializer(review, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return handle_exception(e)
+        serializer = ReviewSerializer(review, data=request.data, partial=True, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, id):
         """
         Deletes a review by its ID.
         """
-        try:
-            review = get_object_or_404(Review, id=id)
-            if review.reviewer != request.user and not request.user.is_staff:
-                return Response(
-                    {"detail": "You are not authorized to delete this review."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-            review.delete()
-            return Response({}, status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            return handle_exception(e)
+        review = get_review_or_404(id)  
 
+        if review.reviewer != request.user and not request.user.is_staff:
+            return Response(
+                {"detail": "You are not authorized to delete this review."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        review.delete()
+        return Response({}, status=status.HTTP_204_NO_CONTENT)
+        
 
 class BaseInfoView(APIView):
     """

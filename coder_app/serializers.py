@@ -158,7 +158,7 @@ class OfferDetailFullSerializer(serializers.ModelSerializer):
             "features",
             "offer_type",
         ]
-
+    
     def validate_features(self, value):
         """Ensure at least one feature is provided."""
         if not value:
@@ -204,6 +204,7 @@ class OfferSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+        
 
     def get_details(self, obj):
         request = self.context.get("request")
@@ -234,8 +235,11 @@ class OfferSerializer(serializers.ModelSerializer):
             details_data = []
         update_main_instance(instance, validated_data)
         update_offer_details(instance, details_data)
+        
+       
+        instance.save()
         return instance
-
+    
 
 class BusinessProfileSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer(read_only=True)
@@ -368,3 +372,34 @@ class ReviewSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "reviewer", "created_at", "updated_at"]
+        
+        
+    def validate_rating(self, value):
+        """
+        Ensure the rating is between 1 and 5.
+        """
+        if not isinstance(value, (int, float)):
+            raise serializers.ValidationError("Rating must be a number.")
+        if not (1 <= value <= 5):
+            raise serializers.ValidationError("Rating must be between 1 and 5.")
+        return value
+
+
+    def validate(self, data):
+        """
+        Ensure the user has not already reviewed the business user.
+        """
+        request = self.context.get("request")
+        if not request:
+            raise serializers.ValidationError("Request context is missing.")
+
+        reviewer = request.user
+        business_user = data.get("business_user")  
+
+        if business_user and Review.objects.filter(reviewer=reviewer, business_user=business_user).exists():
+                raise serializers.ValidationError(
+                {"business_user": "You have already reviewed this business user."}
+            )
+        return data
+
+
