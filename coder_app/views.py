@@ -214,6 +214,7 @@ class OfferDetailView(APIView):
             response_data = {
                 "id": offer.id,
                 "title": offer.title,
+                "image": offer.image or "",
                 "details": OfferDetailFullSerializer(
                     offer.details.all(), many=True
                 ).data,
