@@ -12,11 +12,13 @@ SECRET_KEY = os.getenv(
 DEBUG = False
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost",
+                 "selcuk-kocyigit.de",
                   "api.selcuk-kocyigit.de",
                  "34.13.180.11", ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://api.selcuk-kocyigit.de",
+    "https://selcuk-kocyigit.de"
 ]
 
 INSTALLED_APPS = [
@@ -45,7 +47,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+#CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:3000",
@@ -53,6 +56,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5501",
     "http://localhost:5501",
     "http://localhost:5500",
+    "https://selcuk-kocyigit.de"
 ]
 
 ROOT_URLCONF = "Coder.urls"
