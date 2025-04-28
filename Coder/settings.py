@@ -1,5 +1,8 @@
 from pathlib import Path
 import os
+from corsheaders.defaults import default_headers
+
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -49,6 +52,13 @@ MIDDLEWARE = [
 
 #CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOW_CREDENTIALS = True 
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "authorization",
+    "content-type",
+]        
+
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:3000",
