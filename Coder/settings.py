@@ -7,18 +7,18 @@ SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY",
     "django-insecure-l%7#2e3h4pbq@e7ugz)tui=x(0^v#jx0wczdah3we888y5b$+0",
 )
-#DEBUG = True
+DEBUG = True
 
-DEBUG = False
+#DEBUG = False
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost",
-                 "selcuk-kocyigit.de",
+                 "coderr.selcuk-kocyigit.de",
                   "api.selcuk-kocyigit.de",
                  "34.13.180.11", ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://api.selcuk-kocyigit.de",
-    "https://selcuk-kocyigit.de"
+    "https://coderr.selcuk-kocyigit.de"
 ]
 
 INSTALLED_APPS = [
@@ -56,7 +56,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5501",
     "http://localhost:5501",
     "http://localhost:5500",
-    "https://selcuk-kocyigit.de"
+    "https://coderr.selcuk-kocyigit.de",
+    
 ]
 
 ROOT_URLCONF = "Coder.urls"
