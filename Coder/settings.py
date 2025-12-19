@@ -10,13 +10,15 @@ SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY",
     "django-insecure-l%7#2e3h4pbq@e7ugz)tui=x(0^v#jx0wczdah3we888y5b$+0",
 )
-DEBUG = True
+#DEBUG = True
 
-#DEBUG = False
+DEBUG = False
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost",
                  "coderr.selcuk-kocyigit.de",
                   "api.selcuk-kocyigit.de",
+                   "raspberrypi5",
+                    "192.168.2.219",
                  "34.13.180.11", ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -112,9 +114,9 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-#STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
-STATIC_ROOT = BASE_DIR / "static" 
+#STATIC_ROOT = BASE_DIR / "static" 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
