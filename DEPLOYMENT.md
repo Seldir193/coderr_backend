@@ -1,14 +1,14 @@
 # Deployment (Raspberry Pi 5) — Coderr
 Dieses Dokument beschreibt, wie **Coderr** auf einem Raspberry Pi 5 (Debian / Raspberry Pi OS) produktionsnah deployed wird.
-> Wichtig: **Frontend-Code wird nicht verändert.** Das Frontend nutzt die API fest über `https://api.selcuk-kocyigit.de/api/`.
+> Wichtig: **Frontend-Code wird nicht verändert.** Das Fro[API Base](https://api.selcuk-kocyigit.de/api/)ntend nutzt die API fest über ``.
 ---
 ## Ziel-Setup (Architektur)
-- **Frontend (statisch):** `https://coderr.selcuk-kocyigit.de`
+- **Frontend (statisch):** [coderr.selcuk-kocyigit.de](https://coderr.selcuk-kocyigit.de)
   - Nginx liefert HTML/CSS/JS aus: `/var/www/coderr_frontend`
-- **Backend (Django/DRF):** `https://api.selcuk-kocyigit.de`
+- **Backend (Django/DRF):** [api.selcuk-kocyigit.de](https://api.selcuk-kocyigit.de)
   - Nginx Reverse Proxy → Gunicorn auf `127.0.0.1:8000`
-  - Admin: `https://api.selcuk-kocyigit.de/admin/`
-  - API: `https://api.selcuk-kocyigit.de/api/...`
+  - Admin: [Admin](https://api.selcuk-kocyigit.de/admin/)
+  - API: [API Base](https://api.selcuk-kocyigit.de/api/)
 - **Static/Media (Backend):**
   - `/static/` → `/home/pi/coderr_backend/staticfiles/`
   - `/media/`  → `/home/pi/coderr_backend/media/`
